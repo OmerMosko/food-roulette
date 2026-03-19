@@ -130,6 +130,26 @@ def api_pool_count():
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
+@app.route("/api/proxy/wolt")
+def api_proxy_wolt():
+    """Proxy Wolt's restaurant API with Israeli IP headers — bypasses geo-block on Railway."""
+    try:
+        lat = request.args.get("lat", LAT)
+        lon = request.args.get("lon", LON)
+        url = f"https://restaurant-api.wolt.com/v1/pages/restaurants?lat={lat}&lon={lon}"
+        resp = requests.get(url, headers=HEADERS, timeout=15)
+        resp.raise_for_status()
+        response = app.response_class(
+            response=resp.content,
+            status=200,
+            mimetype="application/json"
+        )
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        return response
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
 # ── SocketIO: game events ────────────────────────────────────────
 @socketio.on("create_room")
 def on_create_room(data):
