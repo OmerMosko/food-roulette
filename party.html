@@ -443,6 +443,42 @@
     }
     .btn-join-hero:hover{border-color:var(--blue);color:var(--blue);background:rgba(76,201,240,.06)}
 
+    .btn-solo-hero{
+      width:100%;max-width:340px;
+      padding:16px;font-size:1rem;font-weight:700;
+      border:1.5px solid rgba(0,212,170,.3);border-radius:50px;
+      background:rgba(0,212,170,.05);color:var(--green);
+      cursor:pointer;transition:all 0.2s;
+      backdrop-filter:blur(4px);
+    }
+    .btn-solo-hero:hover{border-color:var(--green);background:rgba(0,212,170,.12);transform:translateY(-2px)}
+
+    /* How it works */
+    .how-it-works{
+      width:100%;max-width:340px;
+      display:flex;flex-direction:column;gap:10px;
+      margin:4px 0 24px;
+      text-align:left;
+    }
+    .how-step{
+      display:flex;align-items:flex-start;gap:14px;
+      background:rgba(255,255,255,.03);border:1px solid var(--border);
+      border-radius:16px;padding:12px 16px;
+    }
+    .how-step .step-num{
+      font-size:1.4rem;flex-shrink:0;line-height:1;
+    }
+    .how-step .step-text{
+      display:flex;flex-direction:column;gap:2px;
+    }
+    .how-step .step-title{font-size:0.88rem;font-weight:700;color:var(--text)}
+    .how-step .step-desc{font-size:0.77rem;color:var(--muted);line-height:1.4}
+
+    .divider-text{
+      font-size:0.7rem;color:var(--border);font-weight:600;letter-spacing:2px;
+      text-transform:uppercase;margin:4px 0;
+    }
+
     /* spinner */
     .spinner{
       width:36px;height:36px;border:3px solid var(--border);
@@ -455,8 +491,7 @@
 <body>
 
 <nav>
-  <h1>🎉 Food Party</h1>
-  <a href="/solo">← Solo Roulette</a>
+  <h1>🎉 Food Roulette</h1>
 </nav>
 
 <!-- ═══ PAGE: HOME ═══ -->
@@ -471,22 +506,44 @@
 
     <h1 class="hero-title">Food Roulette</h1>
     <p class="hero-sub">
-      Can't decide where to eat?<br>
-      <strong>Swipe together. The group decides.</strong>
+      Stop arguing about where to eat.<br>
+      <strong>Everyone swipes, the group decides — like Tinder for restaurants.</strong>
     </p>
 
-    <div class="features">
-      <div class="feat"><span class="fi">👆</span><span class="ft">Swipe</span></div>
-      <div class="feat"><span class="fi">🗳️</span><span class="ft">70% wins</span></div>
-      <div class="feat"><span class="fi">⭐</span><span class="ft">Superlike</span></div>
-      <div class="feat"><span class="fi">🔥</span><span class="ft">Tiebreaker</span></div>
+    <!-- How it works -->
+    <div class="how-it-works">
+      <div class="how-step">
+        <span class="step-num">1️⃣</span>
+        <div class="step-text">
+          <span class="step-title">Create a room &amp; share the link</span>
+          <span class="step-desc">Friends join instantly — no app, no sign-up, works on any phone.</span>
+        </div>
+      </div>
+      <div class="how-step">
+        <span class="step-num">2️⃣</span>
+        <div class="step-text">
+          <span class="step-title">Everyone swipes restaurants</span>
+          <span class="step-desc">Swipe right 👍 to like, left 👎 to skip. Use ⭐ Superlike to boost your favourite.</span>
+        </div>
+      </div>
+      <div class="how-step">
+        <span class="step-num">3️⃣</span>
+        <div class="step-text">
+          <span class="step-title">The winner is revealed 🍽️</span>
+          <span class="step-desc">The restaurant most people liked wins. Ties go to a tiebreaker round.</span>
+        </div>
+      </div>
     </div>
 
     <button class="btn-hero" onclick="showPage('pg-create')">
-      <span class="btn-hero-icon">🎮</span> Create a Game
+      <span class="btn-hero-icon">🎮</span> Create Multiplayer Game
     </button>
     <button class="btn-join-hero" onclick="showPage('pg-join')">
       🔗 Join with a code
+    </button>
+    <div class="divider-text">or</div>
+    <button class="btn-solo-hero" onclick="window.location='/solo'">
+      🎯 Solo Roulette — just for me
     </button>
   </div>
 </div>
