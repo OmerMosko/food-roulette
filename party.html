@@ -337,7 +337,7 @@
 
 <nav>
   <h1>🎉 Food Party</h1>
-  <a href="/">← Solo Roulette</a>
+  <a href="/solo">← Solo Roulette</a>
 </nav>
 
 <!-- ═══ PAGE: HOME ═══ -->
@@ -390,6 +390,14 @@
       <button class="chip" data-radius="1000">🚶 1km</button>
       <button class="chip" data-radius="2000">🚴 2km</button>
       <button class="chip on" data-radius="0">🌍 All</button>
+    </div>
+
+    <label>Minimum rating</label>
+    <div class="chip-row" id="createRating">
+      <button class="chip" data-score="7.5">7.5+ ⭐</button>
+      <button class="chip on" data-score="8.0">8.0+ ⭐</button>
+      <button class="chip" data-score="8.5">8.5+ ⭐</button>
+      <button class="chip" data-score="9.0">9.0+ ⭐</button>
     </div>
 
     <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:16px">
@@ -754,6 +762,7 @@ let optionCount  = 6;
 let maxOptions   = 40;  // updated dynamically from pool count
 let activeCats   = new Set(["burgers","pizza","mexican","fried chicken"]);
 let maxRadius    = 0;    // 0 = all
+let minScore     = 8.0;
 let hasSuperliked = false;
 let superlikedSlugs = new Set(); // slugs that have been superlikes by anyone
 
@@ -899,7 +908,7 @@ function fetchPoolCount() {
     const fast      = document.getElementById("createFast")?.checked ? "true" : "false";
     const hint      = document.getElementById("poolCountHint");
     if (hint) hint.innerHTML = `<span style="color:var(--muted)">Checking…</span>`;
-    fetch(`/api/pool-count?cats=${encodeURIComponent(cats)}&max_radius=${maxRadius}&fast_only=${fast}`)
+    fetch(`/api/pool-count?cats=${encodeURIComponent(cats)}&max_radius=${maxRadius}&fast_only=${fast}&min_score=${minScore}`)
       .then(r => r.json())
       .then(d => {
         if (!d.ok) return;
@@ -939,6 +948,16 @@ document.querySelectorAll("#createRadius .chip").forEach(btn => {
   });
 });
 
+// Rating chips
+document.querySelectorAll("#createRating .chip").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll("#createRating .chip").forEach(b => b.classList.remove("on"));
+    btn.classList.add("on");
+    minScore = parseFloat(btn.dataset.score);
+    fetchPoolCount();
+  });
+});
+
 // Fast only checkbox
 document.getElementById("createFast")?.addEventListener("change", fetchPoolCount);
 
@@ -954,6 +973,7 @@ function createGame() {
     categories:   [...activeCats],
     max_radius:   maxRadius || null,
     fast_only:    document.getElementById("createFast").checked,
+    min_score:    minScore,
   });
 }
 

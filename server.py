@@ -90,7 +90,7 @@ def fetch_restaurants():
                 break
         if not cat:
             continue
-        if score < 8.0 or volume < 50:
+        if volume < 50:
             continue
 
         desc = (v.get("short_description") or "").replace("\n", " ").strip()[:90]
@@ -120,10 +120,12 @@ def fetch_restaurants():
     return results
 
 
-def apply_filters(rests, cats=None, max_radius=None, fast_only=False, open_only=True):
+def apply_filters(rests, cats=None, max_radius=None, fast_only=False, open_only=True, min_score=8.0):
     out = []
     for r in rests:
         if open_only and not r["online"]:
+            continue
+        if r.get("score", 0) < min_score:
             continue
         if cats and r["category"] not in cats:
             continue
@@ -156,8 +158,9 @@ def api_pool_count():
         cats        = [c.strip() for c in cats_param.split(",") if c.strip()] or None
         max_radius  = int(request.args.get("max_radius", 0)) or None
         fast_only   = request.args.get("fast_only", "false").lower() == "true"
+        min_score   = float(request.args.get("min_score", 8.0))
         rests       = fetch_restaurants()
-        pool        = apply_filters(rests, cats=cats, max_radius=max_radius, fast_only=fast_only)
+        pool        = apply_filters(rests, cats=cats, max_radius=max_radius, fast_only=fast_only, min_score=min_score)
         return jsonify({"ok": True, "count": len(pool)})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
@@ -165,12 +168,12 @@ def api_pool_count():
 
 @app.route("/")
 def index():
-    return send_from_directory(".", "index.html")
-
-
-@app.route("/party")
-def party():
     return send_from_directory(".", "party.html")
+
+
+@app.route("/solo")
+def solo():
+    return send_from_directory(".", "index.html")
 
 
 # ── SocketIO: game events ────────────────────────────────────────
@@ -182,6 +185,7 @@ def on_create_room(data):
     cats         = data.get("categories") or list(TARGET_TAGS.keys())
     max_radius   = data.get("max_radius")   # int or None
     fast_only    = bool(data.get("fast_only", False))
+    min_score    = float(data.get("min_score", 8.0))
 
     try:
         rests = fetch_restaurants()
@@ -189,7 +193,7 @@ def on_create_room(data):
         emit("game_error", {"msg": f"Failed to fetch restaurants: {e}"})
         return
 
-    pool = apply_filters(rests, cats=cats, max_radius=max_radius, fast_only=fast_only)
+    pool = apply_filters(rests, cats=cats, max_radius=max_radius, fast_only=fast_only, min_score=min_score)
     if len(pool) < option_count:
         emit("game_error", {
             "msg": f"Only {len(pool)} restaurants match your filters "
@@ -207,7 +211,7 @@ def on_create_room(data):
         "players":     {request.sid: {"name": host_name, "done": False, "votes": {}, "superlike": None}},
         "restaurants": chosen,
         "status":      "waiting",
-        "filters":     {"cats": cats, "max_radius": max_radius, "fast_only": fast_only},
+        "filters":     {"cats": cats, "max_radius": max_radius, "fast_only": fast_only, "min_score": min_score},
         "pool":        pool,
     }
 
@@ -500,7 +504,8 @@ def on_repull_restaurants(data):
         pool  = apply_filters(rests,
                               cats=filters["cats"],
                               max_radius=filters["max_radius"],
-                              fast_only=filters["fast_only"])
+                              fast_only=filters["fast_only"],
+                              min_score=filters.get("min_score", 8.0))
     except Exception as e:
         emit("game_error", {"msg": f"Failed to fetch restaurants: {e}"})
         return
@@ -534,7 +539,8 @@ def on_restart_game(data):
         pool  = apply_filters(rests,
                               cats=filters["cats"],
                               max_radius=filters["max_radius"],
-                              fast_only=filters["fast_only"])
+                              fast_only=filters["fast_only"],
+                              min_score=filters.get("min_score", 8.0))
         n = room.get("option_count", room["player_count"])
         if len(pool) >= n:
             room["restaurants"] = random.sample(pool, n)
