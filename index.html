@@ -4,6 +4,21 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>🎰 Food Roulette — Tel Aviv</title>
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type"        content="website"/>
+  <meta property="og:url"         content="https://web-production-7ee8.up.railway.app/solo"/>
+  <meta property="og:title"       content="🎰 Food Roulette — Tel Aviv"/>
+  <meta property="og:description" content="Can't decide where to order? Spin the wheel. Real Wolt restaurants, real ratings, zero arguing."/>
+  <meta property="og:image"       content="https://web-production-7ee8.up.railway.app/og-image.png"/>
+  <meta property="og:image:width"  content="1200"/>
+  <meta property="og:image:height" content="630"/>
+
+  <!-- Twitter -->
+  <meta name="twitter:card"        content="summary_large_image"/>
+  <meta name="twitter:title"       content="🎰 Food Roulette — Tel Aviv"/>
+  <meta name="twitter:description" content="Can't decide where to order? Spin the wheel. Real Wolt restaurants, real ratings."/>
+  <meta name="twitter:image"       content="https://web-production-7ee8.up.railway.app/og-image.png"/>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -782,5 +797,11 @@ tickClock();
 setInterval(tickClock, 30_000);
 loadData();
 </script>
+
+<footer style="text-align:center;padding:18px 16px 28px;font-size:0.72rem;color:#444;margin-top:16px">
+  Powered by <a href="https://wolt.com" target="_blank" rel="noopener" style="color:#555;text-decoration:none">Wolt</a> data &nbsp;·&nbsp;
+  Made with ❤️ in Tel Aviv &nbsp;·&nbsp;
+  <a href="/" style="color:#555;text-decoration:none">Multiplayer mode</a>
+</footer>
 </body>
 </html>

@@ -3,7 +3,23 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>🎉 Food Party — Tel Aviv</title>
+  <title>🎉 Food Roulette — Tel Aviv</title>
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type"        content="website"/>
+  <meta property="og:url"         content="https://web-production-7ee8.up.railway.app/"/>
+  <meta property="og:title"       content="🎰 Food Roulette — Tel Aviv"/>
+  <meta property="og:description" content="Stop arguing about where to eat. Everyone swipes Wolt restaurants like Tinder — the app decides. Perfect for groups."/>
+  <meta property="og:image"       content="https://web-production-7ee8.up.railway.app/og-image.png"/>
+  <meta property="og:image:width"  content="1200"/>
+  <meta property="og:image:height" content="630"/>
+
+  <!-- Twitter -->
+  <meta name="twitter:card"        content="summary_large_image"/>
+  <meta name="twitter:title"       content="🎰 Food Roulette — Tel Aviv"/>
+  <meta name="twitter:description" content="Stop arguing about where to eat. Everyone swipes Wolt restaurants like Tinder — the app decides."/>
+  <meta name="twitter:image"       content="https://web-production-7ee8.up.railway.app/og-image.png"/>
+
   <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
@@ -1889,5 +1905,11 @@ function playAgain() {
   socket.emit("restart_game", { code: roomCode });
 }
 </script>
+
+<footer style="text-align:center;padding:18px 16px 24px;font-size:0.72rem;color:#444;margin-top:auto">
+  Powered by <a href="https://wolt.com" target="_blank" rel="noopener" style="color:#555;text-decoration:none">Wolt</a> data &nbsp;·&nbsp;
+  Made with ❤️ in Tel Aviv &nbsp;·&nbsp;
+  <a href="/solo" style="color:#555;text-decoration:none">Solo Roulette</a>
+</footer>
 </body>
 </html>

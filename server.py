@@ -114,6 +114,10 @@ def index():
 def solo():
     return send_from_directory(".", "index.html")
 
+@app.route("/og-image.png")
+def og_image():
+    return send_from_directory(".", "og-image.png")
+
 @app.route("/api/restaurants")
 def api_restaurants():
     try:
