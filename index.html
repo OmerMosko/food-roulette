@@ -576,7 +576,7 @@ function locOnInput() {
   clearTimeout(_locTimer);
   const q = document.getElementById("locationInput").value.trim();
   locHint("");
-  if (!q) { locHideDrop(); userLat = TLV_LAT; userLon = TLV_LON; loadData(); return; }
+  if (!q) { locHideDrop(); userLat = TLV_LAT; userLon = TLV_LON; return; }
   _locTimer = setTimeout(() => locSearch(q), 350);
 }
 async function locSearch(q) {
