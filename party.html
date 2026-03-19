@@ -1722,19 +1722,21 @@ function joinGame() {
 const ONBOARD_KEY = 'fr_onboard_v1';
 let obStep = 0;
 
-// Pre-fill join form from URL ?join=ABCD
+// Capture join code from URL (pre-fill regardless)
 const urlParams = new URLSearchParams(location.search);
-if (urlParams.get("join")) {
-  document.getElementById("joinCode").value = urlParams.get("join").toUpperCase();
-  showPage("pg-join");
-} else {
-  // Show onboarding on first visit, otherwise go straight to home
-  initOnboarding();
+const pendingJoinCode = urlParams.get("join") ? urlParams.get("join").toUpperCase() : null;
+if (pendingJoinCode) {
+  document.getElementById("joinCode").value = pendingJoinCode;
 }
+
+// Always show onboarding on first visit (even on join links)
+// After onboarding, land on join page or home depending on context
+initOnboarding();
 
 function initOnboarding() {
   if (localStorage.getItem(ONBOARD_KEY)) {
-    showPage('pg-home'); // returning user — skip straight to home
+    // Returning user — skip onboarding, go straight to destination
+    pendingJoinCode ? showPage('pg-join') : showPage('pg-home');
     return;
   }
   showPage('pg-onboard'); // first visit
@@ -1758,7 +1760,7 @@ function obNext() {
 
 function obFinish() {
   localStorage.setItem(ONBOARD_KEY, '1');
-  showPage('pg-home');
+  pendingJoinCode ? showPage('pg-join') : showPage('pg-home');
 }
 // ─────────────────────────────────────────────────────────
 
