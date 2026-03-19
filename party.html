@@ -528,6 +528,43 @@
       text-transform:uppercase;margin:4px 0;
     }
 
+    /* ── Tutorial trainer ── */
+    #tutorWrap{
+      position:absolute;inset:0;z-index:50;pointer-events:none;
+      transition:opacity 0.35s;
+    }
+    #tutorWrap.hidden{opacity:0}
+    .tutor-arrow{
+      position:absolute;top:42%;font-size:2.6rem;line-height:1;
+    }
+    #tutorArrowR{right:10px;animation:tutR 0.65s ease-in-out infinite}
+    #tutorArrowL{left:10px;animation:tutL 0.65s ease-in-out infinite}
+    @keyframes tutR{0%,100%{transform:translateX(0)}50%{transform:translateX(11px)}}
+    @keyframes tutL{0%,100%{transform:translateX(0)}50%{transform:translateX(-11px)}}
+    .tutor-bubble{
+      position:absolute;bottom:18px;left:50%;transform:translateX(-50%);
+      background:rgba(8,8,18,0.94);border-radius:16px;padding:13px 18px;
+      width:230px;text-align:center;font-size:0.85rem;font-weight:600;line-height:1.5;
+      color:var(--text);box-shadow:0 6px 28px rgba(0,0,0,.65);
+      animation:tutPop 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .tutor-bubble.like{border:1.5px solid rgba(0,212,170,.55)}
+    .tutor-bubble.nope{border:1.5px solid rgba(255,77,109,.55)}
+    .tutor-bubble.star{border:1.5px solid rgba(255,184,48,.55)}
+    @keyframes tutPop{
+      0%{opacity:0;transform:translateX(-50%) scale(0.8)}
+      100%{opacity:1;transform:translateX(-50%) scale(1)}
+    }
+    .action-btn.tutor-glow{
+      border-color:var(--accent2)!important;
+      animation:tutStarGlow 0.7s ease-in-out infinite!important;
+      transform:scale(1.15)!important;
+    }
+    @keyframes tutStarGlow{
+      0%,100%{box-shadow:0 0 0 0 rgba(255,184,48,.6)}
+      50%{box-shadow:0 0 0 12px rgba(255,184,48,0),0 0 28px rgba(255,184,48,.55)}
+    }
+
     /* spinner */
     .spinner{
       width:36px;height:36px;border:3px solid var(--border);
@@ -771,7 +808,12 @@
 
   <!-- card stack -->
   <div class="card-stack" id="cardStack">
-    <!-- injected by JS -->
+    <!-- trainer overlay — preserved by renderCards() -->
+    <div id="tutorWrap" style="display:none">
+      <div id="tutorArrowR" class="tutor-arrow" style="display:none">👉</div>
+      <div id="tutorArrowL" class="tutor-arrow" style="display:none">👈</div>
+      <div id="tutorBubble" class="tutor-bubble like" style="display:none"></div>
+    </div>
   </div>
 
   <!-- hints -->
@@ -1871,6 +1913,7 @@ function startSwipe() {
   buildProgressDots();
   renderCards();
   showPage("pg-swipe");
+  initTutorial();
 }
 
 function buildProgressDots() {
@@ -1895,6 +1938,7 @@ function updateDots() {
 // ── Card rendering & drag ──────────────
 function renderCards() {
   const stack = document.getElementById("cardStack");
+  const tutor = document.getElementById("tutorWrap"); // preserve tutorial overlay
   stack.innerHTML = "";
   const show = Math.min(2, restaurants.length - cardIdx);
   for (let i = show - 1; i >= 0; i--) {
@@ -1902,6 +1946,7 @@ function renderCards() {
     const card = buildCard(r, i === 0);
     stack.appendChild(card);
   }
+  if (tutor) stack.appendChild(tutor); // re-attach so it stays on top
 }
 
 function buildCard(r, isTop) {
@@ -2062,6 +2107,7 @@ function castVoteFor(slug, vote) {
 function nextCard() {
   cardIdx++;
   updateDots();
+  advanceTutorial();
 
   if (cardIdx >= restaurants.length) {
     // All done — hide all swipe UI, show waiting screen
@@ -2079,6 +2125,72 @@ function nextCard() {
   }
   renderCards();
 }
+
+// ── Tutorial trainer ──────────────────────────────────────
+let tutStep = 0;
+const TUTOR_KEY = 'fr_tutor_v1';
+
+function initTutorial() {
+  tutStep = localStorage.getItem(TUTOR_KEY) ? 99 : 1;
+  showTutorStep(tutStep);
+}
+
+function showTutorStep(step) {
+  const wrap    = document.getElementById('tutorWrap');
+  const arrowR  = document.getElementById('tutorArrowR');
+  const arrowL  = document.getElementById('tutorArrowL');
+  const bubble  = document.getElementById('tutorBubble');
+  const superBtn= document.getElementById('superlikeBtn');
+  if (!wrap) return;
+
+  // reset all
+  arrowR.style.display = 'none';
+  arrowL.style.display = 'none';
+  bubble.style.display = 'none';
+  bubble.className = 'tutor-bubble';
+  if (superBtn) superBtn.classList.remove('tutor-glow');
+
+  if (step === 1) {
+    wrap.style.display = 'block';
+    arrowR.style.display = 'block';
+    bubble.innerHTML =
+      '<span style="color:var(--green);font-size:1.05em">👍 Swipe RIGHT</span><br>' +
+      '<span style="color:var(--muted);font-weight:500;font-size:0.8em">if you want to eat here</span>';
+    bubble.className = 'tutor-bubble like';
+    bubble.style.display = 'block';
+
+  } else if (step === 2) {
+    wrap.style.display = 'block';
+    arrowL.style.display = 'block';
+    bubble.innerHTML =
+      '<span style="color:var(--red);font-size:1.05em">👎 Swipe LEFT</span><br>' +
+      '<span style="color:var(--muted);font-weight:500;font-size:0.8em">if it\'s not for you</span>';
+    bubble.className = 'tutor-bubble nope';
+    bubble.style.display = 'block';
+
+  } else if (step === 3) {
+    wrap.style.display = 'block';
+    if (superBtn) superBtn.classList.add('tutor-glow');
+    bubble.innerHTML =
+      '<span style="color:var(--accent2);font-size:1.05em">⭐ Superlike!</span><br>' +
+      '<span style="color:var(--muted);font-weight:500;font-size:0.8em">Tap the star to guarantee your favourite makes the finals — you only get one!</span>';
+    bubble.className = 'tutor-bubble star';
+    bubble.style.display = 'block';
+
+  } else {
+    // done — fade out and remember
+    wrap.classList.add('hidden');
+    setTimeout(() => { wrap.style.display = 'none'; wrap.classList.remove('hidden'); }, 400);
+    localStorage.setItem(TUTOR_KEY, '1');
+  }
+}
+
+function advanceTutorial() {
+  if (tutStep >= 4) return;
+  tutStep++;
+  showTutorStep(tutStep);
+}
+// ─────────────────────────────────────────────────────────
 
 function updateWaitProgress(progress, total) {
   const done  = Object.values(progress).filter(v => v >= total).length;
