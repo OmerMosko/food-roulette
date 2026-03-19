@@ -1718,6 +1718,10 @@ function joinGame() {
   socket.emit("join_game", { code, name });
 }
 
+// ── Onboarding ───────────────────────────────────────────
+const ONBOARD_KEY = 'fr_onboard_v1';
+let obStep = 0;
+
 // Pre-fill join form from URL ?join=ABCD
 const urlParams = new URLSearchParams(location.search);
 if (urlParams.get("join")) {
@@ -1727,10 +1731,6 @@ if (urlParams.get("join")) {
   // Show onboarding on first visit, otherwise go straight to home
   initOnboarding();
 }
-
-// ── Onboarding ───────────────────────────────────────────
-const ONBOARD_KEY = 'fr_onboard_v1';
-let obStep = 0;
 
 function initOnboarding() {
   if (localStorage.getItem(ONBOARD_KEY)) {
