@@ -1,18 +1,99 @@
 #!/usr/bin/env python3
-"""Food Roulette — Flask + SocketIO backend. Restaurant data fetched client-side."""
+"""Food Roulette — Flask + SocketIO backend."""
 
+import math
 import os
 import random
 import string
-from flask import Flask, send_from_directory
+import requests
+from flask import Flask, jsonify, request, send_from_directory
 from flask_socketio import SocketIO, emit, join_room as sio_join_room
 
 app = Flask(__name__, static_folder=".")
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "food-roulette-secret")
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
 
-# In-memory game rooms
-rooms = {}  # code -> room dict
+rooms = {}
+
+LAT = 32.0761450
+LON = 34.7809560
+
+TARGET_TAGS = {
+    "burgers":       ["burger","burgers","hamburger"],
+    "pizza":         ["pizza"],
+    "mexican":       ["mexican","tex-mex","tacos","burrito"],
+    "fried chicken": ["chicken","fried chicken","wings"],
+}
+
+HEADERS = {
+    "User-Agent":      "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36",
+    "Accept":          "application/json",
+    "X-Forwarded-For": "82.80.1.1",   # Israeli Bezeq IP — Wolt geo check
+    "X-Real-IP":       "82.80.1.1",
+}
+
+
+def haversine(lat1, lon1, lat2, lon2):
+    R = 6371000
+    p1, p2 = math.radians(lat1), math.radians(lat2)
+    a = (math.sin((p2 - p1) / 2) ** 2
+         + math.cos(p1) * math.cos(p2) * math.sin(math.radians(lon2 - lon1) / 2) ** 2)
+    return round(R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a)))
+
+
+def fetch_restaurants():
+    url  = f"https://restaurant-api.wolt.com/v1/pages/restaurants?lat={LAT}&lon={LON}"
+    resp = requests.get(url, headers=HEADERS, timeout=15)
+    resp.raise_for_status()
+    data = resp.json()
+    section = next(
+        (s for s in data.get("sections", []) if s.get("name") == "restaurants-delivering-venues"),
+        None
+    )
+    if not section:
+        return []
+    results = []; seen = set()
+    for item in section.get("items", []):
+        v = item.get("venue", {})
+        if not v: continue
+        slug = v.get("slug", "")
+        if slug in seen: continue
+        seen.add(slug)
+        score  = v.get("rating", {}).get("score", 0) or 0
+        volume = v.get("rating", {}).get("volume", 0) or 0
+        if volume < 50: continue
+        tags = [t.lower() for t in v.get("tags", [])]
+        cat  = next((c for c, kw in TARGET_TAGS.items() if any(k in tags for k in kw)), None)
+        if not cat: continue
+        loc    = v.get("location") or []
+        dist_m = haversine(LAT, LON, loc[1], loc[0]) if len(loc) == 2 else None
+        raw    = (item.get("image") or {}).get("url") or (v.get("brand_image") or {}).get("url") or ""
+        results.append({
+            "name": v.get("name",""), "slug": slug, "category": cat,
+            "score": score, "volume": volume, "online": v.get("online", False),
+            "desc": (v.get("short_description") or "").replace("\n"," ").strip()[:90],
+            "estimate": v.get("estimate_range",""), "dist_m": dist_m,
+            "image_url": (raw + "?w=600") if raw else "",
+            "wolt": f"https://wolt.com/en/isr/tel-aviv/restaurant/{slug}",
+        })
+    results.sort(key=lambda x: (-x["score"], -x["volume"]))
+    return results
+
+
+def apply_filters(rests, cats=None, max_radius=None, fast_only=False, min_score=8.0):
+    out = []
+    for r in rests:
+        if not r.get("online"): continue
+        if r.get("score", 0) < min_score: continue
+        if cats and r["category"] not in cats: continue
+        if max_radius and (r.get("dist_m") is None or r["dist_m"] > max_radius): continue
+        if fast_only:
+            try:
+                if int(r["estimate"].split("-")[-1]) > 45: continue
+            except Exception:
+                pass
+        out.append(r)
+    return out
 
 
 # ── Helpers ─────────────────────────────────────────────────────
@@ -29,40 +110,69 @@ def gen_code():
 def index():
     return send_from_directory(".", "party.html")
 
-
 @app.route("/solo")
 def solo():
     return send_from_directory(".", "index.html")
+
+@app.route("/api/pool-count")
+def api_pool_count():
+    try:
+        cats_param = request.args.get("cats", "")
+        cats       = [c.strip() for c in cats_param.split(",") if c.strip()] or None
+        max_radius = int(request.args.get("max_radius", 0)) or None
+        fast_only  = request.args.get("fast_only", "false").lower() == "true"
+        min_score  = float(request.args.get("min_score", 8.0))
+        rests      = fetch_restaurants()
+        pool       = apply_filters(rests, cats=cats, max_radius=max_radius,
+                                   fast_only=fast_only, min_score=min_score)
+        return jsonify({"ok": True, "count": len(pool)})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
 
 
 # ── SocketIO: game events ────────────────────────────────────────
 @socketio.on("create_room")
 def on_create_room(data):
     host_name    = (data.get("host_name") or "Host").strip() or "Host"
-    player_count = max(2, min(8, int(data.get("player_count", 4))))
-    restaurants  = data.get("restaurants") or []
-    pool_count   = int(data.get("pool_count", len(restaurants)))
+    player_count = max(2, min(8,  int(data.get("player_count", 4))))
+    option_count = max(2, min(40, int(data.get("option_count", 6))))
+    cats         = data.get("categories") or list(TARGET_TAGS.keys())
+    max_radius   = data.get("max_radius")
+    fast_only    = bool(data.get("fast_only", False))
+    min_score    = float(data.get("min_score", 8.0))
 
-    if not restaurants:
-        emit("game_error", {"msg": "No restaurants to play with — check your filters."})
+    try:
+        rests = fetch_restaurants()
+    except Exception as e:
+        emit("game_error", {"msg": f"Failed to fetch restaurants: {e}"})
         return
 
-    code = gen_code()
+    pool = apply_filters(rests, cats=cats, max_radius=max_radius,
+                         fast_only=fast_only, min_score=min_score)
+    if len(pool) < option_count:
+        emit("game_error", {"msg": f"Only {len(pool)} restaurants match your filters. Try relaxing them."})
+        return
+
+    chosen = random.sample(pool, option_count)
+    code   = gen_code()
+
     rooms[code] = {
         "host_sid":     request.sid,
         "player_count": player_count,
-        "option_count": len(restaurants),
+        "option_count": option_count,
         "players":      {request.sid: {"name": host_name, "done": False, "votes": {}, "superlike": None}},
-        "restaurants":  restaurants,
-        "pool_count":   pool_count,
+        "restaurants":  chosen,
+        "pool_count":   len(pool),
         "status":       "waiting",
+        "filters":      {"cats": cats, "max_radius": max_radius,
+                         "fast_only": fast_only, "min_score": min_score},
     }
 
     sio_join_room(code)
     emit("room_created", {
         "code":         code,
-        "restaurants":  restaurants,
-        "pool_count":   pool_count,
+        "restaurants":  chosen,
+        "pool_count":   len(pool),
         "player_count": player_count,
         "players":      [rooms[code]["players"][request.sid]["name"]],
     })
@@ -251,22 +361,25 @@ def on_start_game(data):
     socketio.emit("game_started", {"restaurants": room["restaurants"]}, room=code)
 
 
-@socketio.on("submit_restaurants")
-def on_submit_restaurants(data):
-    """Host submits a fresh restaurant list (after repull)."""
+@socketio.on("repull_restaurants")
+def on_repull_restaurants(data):
     code = (data.get("code") or "").upper()
     if code not in rooms:
         return
     room = rooms[code]
     if room.get("host_sid") != request.sid or room["status"] != "waiting":
         return
-    restaurants = data.get("restaurants") or []
-    pool_count  = int(data.get("pool_count", len(restaurants)))
-    if not restaurants:
-        return
-    room["restaurants"] = restaurants
-    room["pool_count"]  = pool_count
-    socketio.emit("restaurants_updated", {"restaurants": restaurants, "pool_count": pool_count}, room=code)
+    f = room.get("filters", {})
+    try:
+        rests  = fetch_restaurants()
+        pool   = apply_filters(rests, cats=f.get("cats"), max_radius=f.get("max_radius"),
+                               fast_only=f.get("fast_only", False), min_score=f.get("min_score", 8.0))
+        chosen = random.sample(pool, min(room["option_count"], len(pool)))
+        room["restaurants"] = chosen
+        room["pool_count"]  = len(pool)
+        socketio.emit("restaurants_updated", {"restaurants": chosen, "pool_count": len(pool)}, room=code)
+    except Exception as e:
+        emit("game_error", {"msg": f"Failed to repull: {e}"})
 
 
 @socketio.on("restart_game")
@@ -275,12 +388,18 @@ def on_restart_game(data):
     if code not in rooms:
         return
     room = rooms[code]
+    f = room.get("filters", {})
+    try:
+        rests  = fetch_restaurants()
+        pool   = apply_filters(rests, cats=f.get("cats"), max_radius=f.get("max_radius"),
+                               fast_only=f.get("fast_only", False), min_score=f.get("min_score", 8.0))
+        if len(pool) >= room["option_count"]:
+            room["restaurants"] = random.sample(pool, room["option_count"])
+    except Exception:
+        pass
     for p in room["players"].values():
         p["done"] = False; p["votes"] = {}; p["superlike"] = None
     room["status"] = "voting"
-    # Ask host to supply a fresh restaurant list; fall back to current list after 3s
-    emit("request_restart_restaurants", {"code": code})
-    # Guests see the same list if host doesn't respond
     socketio.emit("game_started", {"restaurants": room["restaurants"]}, room=code)
 
 
@@ -302,9 +421,6 @@ def on_disconnect():
                 }, room=code)
             break
 
-
-# Need request context for socket handlers
-from flask import request   # noqa: E402 (must be after app init)
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8765))

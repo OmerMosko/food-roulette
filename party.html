@@ -947,83 +947,6 @@ let activeCats   = new Set(["burgers","pizza","mexican","fried chicken"]);
 let maxRadius    = 0;
 let minScore     = 8.0;
 
-// ── Client-side Wolt fetching ────────────────────────────────────
-const WOLT_LAT  = 32.0761450, WOLT_LON = 34.7809560;
-const WOLT_URL  = `https://restaurant-api.wolt.com/v1/pages/restaurants?lat=${WOLT_LAT}&lon=${WOLT_LON}`;
-const WOLT_TAGS = {
-  "burgers":       ["burger","burgers","hamburger"],
-  "pizza":         ["pizza"],
-  "mexican":       ["mexican","tex-mex","tacos","burrito"],
-  "fried chicken": ["chicken","fried chicken","wings"],
-};
-
-let _woltCache = null;   // cached full list
-
-function haversineDist(lat1,lon1,lat2,lon2) {
-  const R=6371000, p1=lat1*Math.PI/180, p2=lat2*Math.PI/180;
-  const a=Math.sin((p2-p1)/2)**2+Math.cos(p1)*Math.cos(p2)*Math.sin((lon2-lon1)*Math.PI/360)**2;
-  return Math.round(R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a)));
-}
-
-function parseWolt(data) {
-  const section = (data.sections||[]).find(s=>s.name==='restaurants-delivering-venues');
-  if (!section) return [];
-  const results=[]; const seen=new Set();
-  for (const item of section.items||[]) {
-    const v = item.venue; if (!v) continue;
-    const slug = v.slug||''; if (seen.has(slug)) continue; seen.add(slug);
-    const score  = v.rating?.score  || 0;
-    const volume = v.rating?.volume || 0;
-    if (volume < 50) continue;
-    const tags = (v.tags||[]).map(t=>t.toLowerCase());
-    const cat  = Object.entries(WOLT_TAGS).find(([,kw])=>kw.some(k=>tags.includes(k)))?.[0];
-    if (!cat) continue;
-    const loc   = v.location||[];
-    const dist_m = loc.length===2 ? haversineDist(WOLT_LAT,WOLT_LON,loc[1],loc[0]) : null;
-    const rawImg = item.image?.url || v.brand_image?.url || '';
-    results.push({
-      name: v.name||'', slug, category: cat, score, volume, online: true,
-      desc: (v.short_description||'').replace(/\n/g,' ').trim().slice(0,90),
-      estimate: v.estimate_range||'', dist_m,
-      image_url: rawImg ? rawImg+'?w=600' : '',
-      wolt: `https://wolt.com/en/isr/tel-aviv/restaurant/${slug}`,
-    });
-  }
-  results.sort((a,b)=>b.score-a.score||b.volume-a.volume);
-  return results;
-}
-
-function filterWolt(rests, {cats, maxRad, fast, score}) {
-  return rests.filter(r => {
-    if (r.score < score) return false;
-    if (cats && !cats.includes(r.category)) return false;
-    if (maxRad && (r.dist_m==null || r.dist_m>maxRad)) return false;
-    if (fast) { try { if (parseInt(r.estimate.split('-').pop())>45) return false; } catch(e){} }
-    return true;
-  });
-}
-
-function sampleN(arr, n) {
-  return [...arr].sort(()=>Math.random()-.5).slice(0, n);
-}
-
-async function loadWolt(forceRefresh=false) {
-  if (_woltCache && !forceRefresh) return _woltCache;
-  const resp = await fetch(WOLT_URL, {signal: AbortSignal.timeout(12000)});
-  if (!resp.ok) throw new Error(`Wolt API error: ${resp.status}`);
-  const data = await resp.json();
-  _woltCache = parseWolt(data);
-  return _woltCache;
-}
-
-function currentFilterParams() {
-  return {
-    cats:   [...activeCats],
-    maxRad: maxRadius || null,
-    fast:   document.getElementById('createFast')?.checked || false,
-    score:  minScore,
-  };
-}
 let hasSuperliked = false;
 let superlikedSlugs = new Set(); // slugs that have been superlikes by anyone
 
@@ -1078,6 +1001,8 @@ function initSocket() {
     }
     const btn = document.getElementById("repullBtn");
     if (btn) { btn.disabled = false; btn.innerHTML = "🔄 Repull"; }
+    const cb = document.getElementById("createBtn");
+    if (cb)  { cb.disabled = false; cb.innerHTML = "Create Game 🚀"; }
   });
 
   socket.on("player_joined", d => {
@@ -1162,21 +1087,23 @@ function changeOptions(delta) {
 let _poolFetchTimer = null;
 function fetchPoolCount() {
   clearTimeout(_poolFetchTimer);
-  _poolFetchTimer = setTimeout(async () => {
+  _poolFetchTimer = setTimeout(() => {
+    const cats = [...activeCats].join(",");
+    const fast = document.getElementById("createFast")?.checked ? "true" : "false";
     const hint = document.getElementById("poolCountHint");
-    if (hint) hint.innerHTML = `<span style="color:var(--muted)">Loading restaurants…</span>`;
-    try {
-      const rests = await loadWolt();
-      const pool  = filterWolt(rests, currentFilterParams());
-      maxOptions  = pool.length;
-      optionCount = Math.max(2, Math.min(optionCount, maxOptions));
-      document.getElementById("optionCountDisplay").textContent = optionCount;
-      if (hint) hint.innerHTML =
-        `<span style="color:var(--green);font-weight:600">${pool.length}</span> restaurants available`;
-    } catch(e) {
-      if (hint) hint.innerHTML = `<span style="color:var(--red)">⚠️ Could not load restaurants</span>`;
-    }
-  }, 300);
+    if (hint) hint.innerHTML = `<span style="color:var(--muted)">Checking…</span>`;
+    fetch(`/api/pool-count?cats=${encodeURIComponent(cats)}&max_radius=${maxRadius}&fast_only=${fast}&min_score=${minScore}`)
+      .then(r => r.json())
+      .then(d => {
+        if (!d.ok) return;
+        maxOptions  = d.count;
+        optionCount = Math.min(optionCount, maxOptions);
+        document.getElementById("optionCountDisplay").textContent = optionCount;
+        if (hint) hint.innerHTML =
+          `<span style="color:var(--green);font-weight:600">${d.count}</span> restaurants available`;
+      })
+      .catch(() => { if (hint) hint.textContent = ""; });
+  }, 400);
 }
 
 // Cat chips
@@ -1218,32 +1145,20 @@ document.querySelectorAll("#createRating .chip").forEach(btn => {
 // Fast only checkbox
 document.getElementById("createFast")?.addEventListener("change", fetchPoolCount);
 
-async function createGame() {
+function createGame() {
   initSocket();
   const name = document.getElementById("hostName").value.trim() || "Host";
   myName = name;
-  const btn = document.getElementById("createBtn");
-  btn.disabled = true;
-  btn.innerHTML = "⏳ Loading restaurants…";
-  try {
-    const rests  = await loadWolt();
-    const pool   = filterWolt(rests, currentFilterParams());
-    if (pool.length < 2) {
-      showError("Not enough restaurants match your filters. Try relaxing them.");
-      btn.disabled = false; btn.innerHTML = "Create Game 🚀";
-      return;
-    }
-    const chosen = sampleN(pool, Math.min(optionCount, pool.length));
-    socket.emit("create_room", {
-      host_name:    name,
-      player_count: playerCount,
-      restaurants:  chosen,
-      pool_count:   pool.length,
-    });
-  } catch(e) {
-    showError("Could not load restaurants — check your connection.");
-    btn.disabled = false; btn.innerHTML = "Create Game 🚀";
-  }
+  document.getElementById("createBtn").disabled = true;
+  socket.emit("create_room", {
+    host_name:    name,
+    player_count: playerCount,
+    option_count: optionCount,
+    categories:   [...activeCats],
+    max_radius:   maxRadius || null,
+    fast_only:    document.getElementById("createFast").checked,
+    min_score:    minScore,
+  });
 }
 
 function joinGame() {
@@ -1337,25 +1252,11 @@ function startGame() {
   socket.emit("start_game", { code: roomCode });
 }
 
-async function repullRestaurants() {
+function repullRestaurants() {
   const btn = document.getElementById("repullBtn");
   btn.disabled = true;
   btn.innerHTML = "⏳ Pulling…";
-  try {
-    const rests  = await loadWolt(true);   // force refresh
-    const pool   = filterWolt(rests, currentFilterParams());
-    const chosen = sampleN(pool, Math.min(optionCount, pool.length));
-    socket.emit("submit_restaurants", {
-      code:        roomCode,
-      restaurants: chosen,
-      pool_count:  pool.length,
-    });
-  } catch(e) {
-    showError("Could not load restaurants.");
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = "🔄 Repull";
-  }
+  socket.emit("repull_restaurants", { code: roomCode });
 }
 
 
