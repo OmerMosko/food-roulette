@@ -13,9 +13,7 @@ import requests
 app = Flask(__name__, static_folder=".")
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "food-roulette-secret")
 
-# Use eventlet in production (Railway sets PORT), threading locally
-ASYNC_MODE = "eventlet" if os.environ.get("PORT") else "threading"
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode=ASYNC_MODE)
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
 
 LAT = 32.0761450
 LON = 34.7809560
