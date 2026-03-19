@@ -1,0 +1,1642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>🎉 Food Party — Tel Aviv</title>
+  <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#0f0f13;--card:#1a1a24;--accent:#ff6b35;--accent2:#ffb830;
+      --green:#00d4aa;--red:#ff4d6d;--blue:#4cc9f0;
+      --text:#f0f0f0;--muted:#777;--border:#2a2a38;
+    }
+    body{
+      background:var(--bg);color:var(--text);
+      font-family:'Segoe UI',system-ui,sans-serif;
+      min-height:100vh;display:flex;flex-direction:column;
+      align-items:center;padding:0 16px 40px;
+    }
+    a{color:var(--accent);text-decoration:none}
+
+    /* ── Nav ── */
+    nav{
+      width:100%;max-width:480px;display:flex;align-items:center;
+      justify-content:space-between;padding:18px 0 10px;
+    }
+    nav h1{
+      font-size:1.3rem;font-weight:800;
+      background:linear-gradient(135deg,var(--accent),var(--accent2));
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+    }
+    nav a{font-size:0.8rem;color:var(--muted)}
+
+    /* ── Pages ── */
+    .page{display:none;width:100%;max-width:480px;flex-direction:column;align-items:center;gap:16px}
+    .page.active{display:flex}
+
+    /* ── Cards / panels ── */
+    .panel{
+      background:var(--card);border:1px solid var(--border);border-radius:20px;
+      padding:24px;width:100%;
+    }
+    .panel h2{font-size:1.1rem;font-weight:700;margin-bottom:16px;color:var(--accent2)}
+    .panel p{font-size:0.85rem;color:var(--muted);line-height:1.5}
+
+    /* ── Form elements ── */
+    label{font-size:0.78rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px}
+
+    input[type=text], input[type=number]{
+      width:100%;padding:12px 14px;
+      background:#12121a;border:1.5px solid var(--border);border-radius:12px;
+      color:var(--text);font-size:1rem;margin-top:6px;margin-bottom:14px;
+      outline:none;transition:border-color 0.2s;
+    }
+    input:focus{border-color:var(--accent)}
+
+    .input-code{
+      font-size:2rem!important;font-weight:800!important;
+      text-align:center;letter-spacing:6px;text-transform:uppercase;
+    }
+
+    /* player count stepper */
+    .stepper{display:flex;align-items:center;gap:12px;margin:8px 0 16px}
+    .stepper button{
+      width:36px;height:36px;border-radius:50%;border:1.5px solid var(--border);
+      background:transparent;color:var(--text);font-size:1.2rem;cursor:pointer;
+      transition:border-color 0.15s;display:flex;align-items:center;justify-content:center;
+    }
+    .stepper button:hover{border-color:var(--accent)}
+    .stepper .count{font-size:1.6rem;font-weight:800;min-width:32px;text-align:center;color:var(--accent2)}
+
+    /* chips */
+    .chip-row{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 14px}
+    .chip{
+      padding:6px 14px;border-radius:50px;border:1.5px solid var(--border);
+      background:transparent;color:var(--muted);cursor:pointer;
+      font-size:0.8rem;font-weight:600;transition:all 0.15s;user-select:none;
+    }
+    .chip.on{border-color:var(--accent);color:var(--accent);background:rgba(255,107,53,.1)}
+
+    /* ── Buttons ── */
+    .btn{
+      display:block;width:100%;padding:15px;font-size:1rem;font-weight:700;
+      border:none;border-radius:50px;cursor:pointer;transition:transform 0.15s,opacity 0.15s;
+    }
+    .btn:hover:not(:disabled){transform:translateY(-2px)}
+    .btn:disabled{opacity:.4;cursor:not-allowed}
+    .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 4px 20px rgba(255,107,53,.35)}
+    .btn-secondary{background:transparent;border:1.5px solid var(--border);color:var(--muted)}
+    .btn-secondary:hover:not(:disabled){border-color:var(--blue);color:var(--blue)}
+    .btn-green{background:var(--green);color:#0a2420;box-shadow:0 4px 16px rgba(0,212,170,.3)}
+
+    /* ── Error ── */
+    .error-box{
+      background:rgba(255,77,109,.1);border:1px solid rgba(255,77,109,.3);
+      border-radius:12px;padding:12px 16px;color:var(--red);font-size:0.85rem;
+      display:none;width:100%;
+    }
+
+    /* ── Code display ── */
+    .code-badge{
+      font-size:2.5rem;font-weight:900;letter-spacing:8px;
+      background:linear-gradient(135deg,var(--accent),var(--accent2));
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+    }
+    .code-hint{font-size:0.8rem;color:var(--muted);margin-top:4px}
+
+    /* ── Player list ── */
+    .player-list{display:flex;flex-direction:column;gap:8px;width:100%}
+    .player-item{
+      display:flex;align-items:center;gap:10px;
+      background:#12121a;border-radius:10px;padding:10px 14px;
+      font-size:0.9rem;font-weight:600;
+    }
+    .player-dot{width:10px;height:10px;border-radius:50%;background:var(--green);flex-shrink:0}
+    .player-dot.empty{background:var(--border)}
+    .slot-label{color:var(--muted);font-weight:400}
+    .host-badge{
+      margin-left:auto;font-size:0.65rem;background:rgba(255,184,48,.15);
+      color:var(--accent2);padding:2px 8px;border-radius:10px;font-weight:700;
+    }
+
+    /* ── Progress dots ── */
+    .progress-dots{display:flex;gap:6px;justify-content:center;margin:10px 0}
+    .pdot{
+      width:28px;height:6px;border-radius:3px;
+      background:var(--border);transition:background 0.3s;
+    }
+    .pdot.done{background:var(--green)}
+    .pdot.active{background:var(--accent)}
+
+    /* ═══════════════════════════════════
+       SWIPE SCREEN
+    ═══════════════════════════════════ */
+    #pg-swipe{position:relative}
+
+    .swipe-header{
+      text-align:center;width:100%;margin-bottom:8px;
+    }
+    .swipe-header .sub{font-size:0.8rem;color:var(--muted);margin-top:4px}
+
+    /* Card stack */
+    .card-stack{
+      position:relative;width:100%;max-width:360px;
+      height:490px;margin:0 auto;
+    }
+
+    .swipe-card{
+      position:absolute;inset:0;
+      background:var(--card);border:1.5px solid var(--border);border-radius:24px;
+      padding:24px;display:flex;flex-direction:column;
+      cursor:grab;user-select:none;touch-action:none;
+      transition:transform 0.08s ease;
+      box-shadow:0 8px 40px rgba(0,0,0,.4);
+    }
+    .swipe-card:active{cursor:grabbing}
+    .swipe-card.behind{
+      transform:scale(0.94) translateY(12px);
+      pointer-events:none;z-index:0;
+      filter:brightness(0.7);
+    }
+    .swipe-card.top{z-index:10}
+
+    /* Like / nope overlays */
+    .overlay{
+      position:absolute;top:20px;padding:6px 16px;
+      border-radius:8px;border:3px solid;font-size:1.4rem;font-weight:900;
+      opacity:0;pointer-events:none;transition:opacity 0.1s;letter-spacing:2px;
+    }
+    .overlay.like{right:20px;color:var(--green);border-color:var(--green)}
+    .overlay.nope{left:20px;color:var(--red);border-color:var(--red)}
+
+    .card-img{
+      width:calc(100% + 48px);margin:-24px -24px 16px;
+      height:190px;object-fit:cover;border-radius:22px 22px 0 0;
+      background:var(--border);display:block;flex-shrink:0;
+    }
+    .card-img-placeholder{
+      width:calc(100% + 48px);margin:-24px -24px 16px;
+      height:190px;border-radius:22px 22px 0 0;flex-shrink:0;
+      background:linear-gradient(135deg,#1e1e2c,#2a2a3a);
+      display:flex;align-items:center;justify-content:center;
+      font-size:4rem;
+    }
+    .card-emoji-big{font-size:3rem;margin-bottom:10px}
+    .card-name{font-size:1.2rem;font-weight:800;color:var(--accent2);margin-bottom:6px;line-height:1.2}
+    .card-tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+    .card-tag{
+      font-size:0.7rem;font-weight:700;padding:3px 10px;border-radius:20px;
+      text-transform:uppercase;letter-spacing:0.4px;
+    }
+    .tag-cat{background:rgba(255,107,53,.15);color:var(--accent)}
+    .tag-score{background:rgba(255,184,48,.15);color:var(--accent2)}
+    .tag-dist{background:rgba(76,201,240,.12);color:var(--blue)}
+    .tag-est{background:rgba(0,212,170,.1);color:var(--green)}
+    .card-desc{font-size:0.84rem;color:var(--muted);line-height:1.5;flex:1}
+
+    /* Swipe hint arrows */
+    .swipe-hint{
+      display:flex;justify-content:space-between;align-items:center;
+      width:100%;max-width:360px;margin:12px auto 0;
+      font-size:0.78rem;color:var(--muted);
+    }
+    .hint-nope{color:var(--red);font-weight:700}
+    .hint-like{color:var(--green);font-weight:700}
+
+    /* Action buttons (alt to swipe) */
+    .action-row{
+      display:flex;gap:16px;justify-content:center;width:100%;max-width:360px;margin-top:12px;
+    }
+    .action-btn{
+      width:60px;height:60px;border-radius:50%;border:2px solid;
+      background:transparent;cursor:pointer;font-size:1.4rem;
+      display:flex;align-items:center;justify-content:center;
+      transition:transform 0.15s,background 0.15s;
+    }
+    .action-btn:hover{transform:scale(1.1)}
+    .action-nope{border-color:var(--red);color:var(--red)}
+    .action-nope:hover{background:rgba(255,77,109,.15)}
+    .action-like{border-color:var(--green);color:var(--green)}
+    .action-like:hover{background:rgba(0,212,170,.15)}
+
+    /* Waiting after done */
+    .waiting-others{
+      text-align:center;padding:20px;color:var(--muted);font-size:0.9rem;
+    }
+    .waiting-others .big{font-size:2.5rem;margin-bottom:8px}
+    .progress-bar-wrap{
+      background:var(--border);border-radius:10px;height:8px;
+      width:100%;max-width:360px;margin:10px auto 0;overflow:hidden;
+    }
+    .progress-bar-fill{
+      height:100%;border-radius:10px;
+      background:linear-gradient(90deg,var(--accent),var(--accent2));
+      transition:width 0.4s ease;
+    }
+
+    /* ═══════════════════════════════════
+       RESULT SCREEN
+    ═══════════════════════════════════ */
+    .result-winner{
+      text-align:center;padding:28px 24px;
+      background:var(--card);border:1px solid var(--border);
+      border-radius:24px;width:100%;
+      animation:pop 0.4s cubic-bezier(.34,1.56,.64,1);
+    }
+    @keyframes pop{from{transform:scale(0.7);opacity:0}to{transform:scale(1);opacity:1}}
+
+    .winner-emoji{font-size:3.5rem;margin-bottom:12px}
+    .winner-label{font-size:0.75rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:6px}
+    .winner-name{font-size:1.5rem;font-weight:800;color:var(--accent2);margin-bottom:12px;line-height:1.2}
+    .winner-score{font-size:0.85rem;color:var(--muted);margin-bottom:16px}
+    .vote-bar-wrap{margin:4px 0;font-size:0.82rem}
+    .vote-bar-label{display:flex;justify-content:space-between;margin-bottom:3px;color:var(--muted)}
+    .vote-bar-label span:last-child{color:var(--green);font-weight:700}
+    .vote-bar-bg{background:var(--border);border-radius:6px;height:8px;overflow:hidden}
+    .vote-bar-fill{height:100%;border-radius:6px;background:var(--green);transition:width 0.6s ease}
+    .vote-bar-fill.majority{background:var(--accent2)}
+
+    .result-table{width:100%;border-collapse:collapse}
+    .result-table th{
+      font-size:0.7rem;text-transform:uppercase;letter-spacing:0.8px;
+      color:var(--muted);padding:8px 10px;text-align:left;
+      border-bottom:1px solid var(--border);
+    }
+    .result-table td{padding:10px;font-size:0.85rem;border-bottom:1px solid #1e1e2a}
+    .result-table tr:last-child td{border-bottom:none}
+    .result-table tr.winner-row td{background:rgba(255,184,48,.06)}
+    .pct-cell{font-weight:700;color:var(--green)}
+    .pct-cell.majority{color:var(--accent2)}
+
+    /* ── Rank items ── */
+    .rank-item{
+      display:flex;align-items:center;gap:10px;
+      background:var(--card);border:1.5px solid var(--border);
+      border-radius:14px;padding:10px 12px;
+      cursor:grab;user-select:none;touch-action:none;
+      transition:border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+      position:relative;
+    }
+    .rank-item:active{cursor:grabbing}
+    .rank-item.dragging{
+      opacity:0.4;border-style:dashed;
+    }
+    .rank-item.drag-over{
+      border-color:var(--accent);
+      box-shadow:0 0 0 2px rgba(255,107,53,.25);
+    }
+    .rank-num{
+      width:28px;height:28px;border-radius:50%;
+      background:linear-gradient(135deg,var(--accent),var(--accent2));
+      color:#fff;font-weight:800;font-size:0.85rem;
+      display:flex;align-items:center;justify-content:center;flex-shrink:0;
+    }
+    .rank-thumb{width:44px;height:44px;border-radius:10px;object-fit:cover;flex-shrink:0}
+    .rank-thumb-emoji{width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;background:#12121a;border-radius:10px;flex-shrink:0}
+    .rank-info{flex:1;min-width:0}
+    .rank-info .rname{font-size:0.88rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .rank-info .rmeta{font-size:0.7rem;color:var(--muted);margin-top:2px}
+    .rank-arrows{display:flex;flex-direction:column;gap:2px;flex-shrink:0}
+    .rank-arrow{
+      width:24px;height:22px;border:1px solid var(--border);
+      border-radius:6px;background:transparent;color:var(--muted);
+      cursor:pointer;font-size:0.7rem;display:flex;align-items:center;justify-content:center;
+      transition:border-color 0.15s,color 0.15s;
+    }
+    .rank-arrow:hover{border-color:var(--accent);color:var(--accent)}
+    .drag-handle{font-size:1rem;color:var(--border);padding:0 4px;flex-shrink:0;cursor:grab}
+
+    /* ── Superlike ── */
+    .action-super{border-color:var(--accent2);color:var(--accent2)}
+    .action-super:hover{background:rgba(255,184,48,.15)}
+    .action-super:disabled{opacity:.3;cursor:not-allowed}
+    .action-super.used{border-color:var(--border);color:var(--border)}
+    .super-badge{
+      position:absolute;top:12px;left:50%;transform:translateX(-50%);
+      background:linear-gradient(135deg,var(--accent2),#ff9800);
+      color:#000;font-size:0.72rem;font-weight:800;padding:3px 10px;
+      border-radius:20px;letter-spacing:0.5px;pointer-events:none;
+      z-index:20;white-space:nowrap;
+    }
+    .superlike-count{
+      font-size:0.75rem;color:var(--accent2);font-weight:700;margin-left:4px;
+    }
+
+    /* spinner */
+    .spinner{
+      width:36px;height:36px;border:3px solid var(--border);
+      border-top-color:var(--accent);border-radius:50%;
+      animation:spin 0.8s linear infinite;
+    }
+    @keyframes spin{to{transform:rotate(360deg)}}
+  </style>
+</head>
+<body>
+
+<nav>
+  <h1>🎉 Food Party</h1>
+  <a href="/">← Solo Roulette</a>
+</nav>
+
+<!-- ═══ PAGE: HOME ═══ -->
+<div class="page active" id="pg-home">
+  <div class="panel" style="text-align:center;padding:32px 24px">
+    <div style="font-size:3rem;margin-bottom:12px">🎲</div>
+    <h2 style="margin-bottom:8px">Multiplayer Food Roulette</h2>
+    <p>Pick restaurants together — Tinder style.<br>
+       70%+ agreement wins the vote.</p>
+  </div>
+  <button class="btn btn-primary" onclick="showPage('pg-create')">🎮 Create a Game</button>
+  <button class="btn btn-secondary" onclick="showPage('pg-join')">🔗 Join with Code</button>
+</div>
+
+<!-- ═══ PAGE: CREATE ═══ -->
+<div class="page" id="pg-create">
+  <div class="panel">
+    <h2>🎮 Create Game</h2>
+
+    <label>Your name</label>
+    <input type="text" id="hostName" placeholder="e.g. Mosko" maxlength="20"/>
+
+    <label>Number of players</label>
+    <div class="stepper">
+      <button onclick="changeCount(-1)">−</button>
+      <span class="count" id="playerCountDisplay">4</span>
+      <button onclick="changeCount(1)">+</button>
+    </div>
+
+    <label>Number of restaurant options to swipe</label>
+    <div class="stepper">
+      <button onclick="changeOptions(-1)">−</button>
+      <span class="count" id="optionCountDisplay">6</span>
+      <button onclick="changeOptions(1)">+</button>
+      <span style="font-size:0.8rem;color:var(--muted);margin-left:4px">cards per player</span>
+    </div>
+    <div id="poolCountHint" style="font-size:0.78rem;color:var(--muted);margin:-10px 0 14px;min-height:18px"></div>
+
+    <label>Categories</label>
+    <div class="chip-row" id="createCats">
+      <button class="chip on" data-cat="burgers">🍔 Burgers</button>
+      <button class="chip on" data-cat="pizza">🍕 Pizza</button>
+      <button class="chip on" data-cat="mexican">🌮 Mexican</button>
+      <button class="chip on" data-cat="fried chicken">🍗 Fried Chicken</button>
+    </div>
+
+    <label>Max distance</label>
+    <div class="chip-row" id="createRadius">
+      <button class="chip" data-radius="500">📍 500m</button>
+      <button class="chip" data-radius="1000">🚶 1km</button>
+      <button class="chip" data-radius="2000">🚴 2km</button>
+      <button class="chip on" data-radius="0">🌍 All</button>
+    </div>
+
+    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:16px">
+      <input type="checkbox" id="createFast" style="width:auto;margin:0"/>
+      <span>⚡ Fast only (≤45 min)</span>
+    </label>
+
+    <div class="error-box" id="createError"></div>
+
+    <button class="btn btn-primary" id="createBtn" onclick="createGame()">Create Game 🚀</button>
+  </div>
+  <button class="btn btn-secondary" onclick="showPage('pg-home')">← Back</button>
+</div>
+
+<!-- ═══ PAGE: JOIN ═══ -->
+<div class="page" id="pg-join">
+  <div class="panel">
+    <h2>🔗 Join a Game</h2>
+    <label>Room code (4 letters)</label>
+    <input type="text" id="joinCode" class="input-code" placeholder="ABCD" maxlength="4"/>
+    <label>Your name</label>
+    <input type="text" id="joinName" placeholder="e.g. Omer" maxlength="20"/>
+    <div class="error-box" id="joinError"></div>
+    <button class="btn btn-primary" id="joinBtn" onclick="joinGame()">Join Game →</button>
+  </div>
+  <button class="btn btn-secondary" onclick="showPage('pg-home')">← Back</button>
+</div>
+
+<!-- ═══ PAGE: LOBBY ═══ -->
+<div class="page" id="pg-lobby">
+  <div class="panel" style="text-align:center">
+    <div class="winner-label">Room Code</div>
+    <div class="code-badge" id="lobbyCode">----</div>
+    <div class="code-hint" id="lobbyHint">Share this code with your friends</div>
+    <div style="margin-top:10px">
+      <button class="btn btn-secondary" id="copyLinkBtn" onclick="copyInviteLink()"
+        style="padding:10px 20px;font-size:0.85rem;width:auto;display:inline-flex;align-items:center;gap:6px">
+        🔗 Share invite link
+      </button>
+    </div>
+    <span id="lobbyLink" style="display:none"></span>
+  </div>
+
+  <div class="panel">
+    <h2>Players <span id="lobbyCountLabel" style="color:var(--muted);font-weight:400"></span></h2>
+    <div class="player-list" id="lobbyPlayerList"></div>
+    <div style="margin-top:14px;font-size:0.8rem;color:var(--muted);text-align:center">
+      ⏳ Waiting for all players to join…
+    </div>
+  </div>
+
+  <div class="panel">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <h2 style="margin:0">Tonight's restaurants</h2>
+      <button id="repullBtn" class="btn btn-secondary"
+        onclick="repullRestaurants()"
+        style="display:none;padding:7px 14px;font-size:0.78rem;width:auto">
+        🔄 Repull
+      </button>
+    </div>
+    <p style="margin-bottom:12px" id="poolCountLabel"></p>
+    <div id="lobbyRestaurants" style="display:flex;flex-direction:column;gap:8px"></div>
+  </div>
+</div>
+
+<!-- ═══ PAGE: TIEBREAKER ═══ -->
+<div class="page" id="pg-qualify">
+  <div class="panel" style="text-align:center;padding:36px 24px">
+    <div style="font-size:3.5rem;margin-bottom:12px">🔥</div>
+    <h2 style="font-size:1.4rem;margin-bottom:10px;color:var(--red)">Tiebreaker!</h2>
+    <p id="qualifySubtitle" style="margin-bottom:20px"></p>
+    <div style="display:flex;flex-direction:column;gap:8px" id="qualifyList"></div>
+    <div style="margin-top:24px;font-size:0.85rem;color:var(--muted)" id="qualifyCountdown">Starting in 3…</div>
+  </div>
+</div>
+
+<!-- ═══ PAGE: SWIPE ═══ -->
+<div class="page" id="pg-swipe">
+  <div class="swipe-header">
+    <div id="swipeTitle" style="font-weight:700;font-size:1rem">Swipe to vote</div>
+    <div class="sub" id="swipeSub">Right = 👍 Wanna order this · Left = 👎 Nope</div>
+  </div>
+
+  <!-- progress dots -->
+  <div class="progress-dots" id="progressDots"></div>
+
+  <!-- card stack -->
+  <div class="card-stack" id="cardStack">
+    <!-- injected by JS -->
+  </div>
+
+  <!-- hints -->
+  <div class="swipe-hint">
+    <span class="hint-nope">✕ NOPE</span>
+    <span style="color:var(--muted);font-size:0.75rem">swipe or tap</span>
+    <span class="hint-like">LIKE ❤</span>
+  </div>
+
+  <!-- button fallback -->
+  <div class="action-row">
+    <button class="action-btn action-nope" onclick="castVote(false)" title="Nope">✕</button>
+    <button class="action-btn action-super" id="superlikeBtn" onclick="castSuperlike()" title="Superlike — promotes to finals!">⭐</button>
+    <button class="action-btn action-like" onclick="castVote(true)"  title="Like">❤</button>
+  </div>
+  <div style="text-align:center;font-size:0.72rem;color:var(--muted);margin-top:4px" id="superlikeHint">
+    ⭐ 1 superlike — guarantees this place reaches the finals
+  </div>
+
+  <!-- waiting state (shown after all swiped) -->
+  <div class="waiting-others" id="waitingOthers" style="display:none">
+    <div class="big">☕</div>
+    <div>You're done! Waiting for others…</div>
+    <div class="progress-bar-wrap" style="margin-top:14px">
+      <div class="progress-bar-fill" id="waitProgressBar" style="width:0%"></div>
+    </div>
+    <div id="waitProgressLabel" style="margin-top:6px;font-size:0.75rem;color:var(--muted)"></div>
+  </div>
+</div>
+
+<!-- ═══ PAGE: RANKING ═══ -->
+<div class="page" id="pg-ranking">
+  <div style="text-align:center;width:100%;margin-bottom:4px">
+    <div style="font-size:1rem;font-weight:700">🏆 <span style="color:var(--red)">Tiebreaker — Rank them!</span></div>
+    <div style="font-size:0.8rem;color:var(--muted);margin-top:4px">Drag or use arrows · #1 = your top pick</div>
+  </div>
+
+  <div id="rankList" style="display:flex;flex-direction:column;gap:8px;width:100%;touch-action:none"></div>
+
+  <div id="rankWaiting" style="display:none;text-align:center;padding:20px;color:var(--muted)">
+    <div style="font-size:2rem;margin-bottom:8px">⏳</div>
+    <div>Your ranking is locked in!</div>
+    <div style="font-size:0.8rem;margin-top:6px" id="rankWaitLabel">Waiting for others…</div>
+    <div style="background:var(--border);border-radius:10px;height:8px;margin-top:12px;overflow:hidden">
+      <div id="rankProgressBar" style="height:100%;border-radius:10px;background:linear-gradient(90deg,var(--accent),var(--accent2));width:0%;transition:width 0.4s"></div>
+    </div>
+  </div>
+
+  <button class="btn btn-primary" id="rankSubmitBtn" onclick="submitRanking()" style="margin-top:8px">
+    🔒 Lock in my ranking
+  </button>
+</div>
+
+<!-- ═══ PAGE: RESULT ═══ -->
+<div class="page" id="pg-result">
+  <div id="resultWinner" class="result-winner" style="display:none">
+    <img id="winnerImg" src="" alt="" style="width:calc(100% + 48px);margin:-28px -28px 16px;height:180px;object-fit:cover;border-radius:20px 20px 0 0;display:none"/>
+    <div class="winner-emoji" id="winnerEmoji">🎉</div>
+    <div class="winner-label">You're ordering from</div>
+    <div class="winner-name" id="winnerName"></div>
+    <div class="winner-score" id="winnerMeta"></div>
+    <a id="winnerLink" class="btn btn-green" href="#" target="_blank"
+       style="display:inline-block;width:auto;padding:12px 28px;margin-bottom:14px;text-decoration:none">
+       🛵 Order on Wolt
+    </a>
+    <div id="winnerVoteBar"></div>
+  </div>
+
+  <div id="resultNoWinner" class="panel" style="text-align:center;display:none">
+    <div style="font-size:2.5rem;margin-bottom:8px">😅</div>
+    <h2 style="margin-bottom:8px">No consensus!</h2>
+    <p>No restaurant got 70%+ approval. Here's how everyone voted:</p>
+  </div>
+
+  <div class="panel" id="resultTableWrap">
+    <h2>All votes</h2>
+    <table class="result-table" id="resultTable">
+      <thead id="resultTableHead">
+        <tr>
+          <th>Restaurant</th>
+          <th>👍</th>
+          <th>👎</th>
+          <th>%</th>
+        </tr>
+      </thead>
+      <tbody id="resultTableBody"></tbody>
+    </table>
+  </div>
+
+  <button class="btn btn-primary" onclick="playAgain()">🔄 Play Again</button>
+  <button class="btn btn-secondary" onclick="showPage('pg-home')">← Home</button>
+</div>
+
+<script>
+// ═══════════════════════════════════════
+// 🔊 Sound Engine (Web Audio API)
+// ═══════════════════════════════════════
+const sounds = (() => {
+  let ctx = null;
+
+  function getCtx() {
+    if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+    if (ctx.state === "suspended") ctx.resume();
+    return ctx;
+  }
+
+  // Core: play a tone with envelope
+  function tone(freq, type = "sine", start = 0, dur = 0.15, vol = 0.4, detune = 0) {
+    const c   = getCtx();
+    const osc = c.createOscillator();
+    const env = c.createGain();
+    osc.connect(env);
+    env.connect(c.destination);
+    osc.type      = type;
+    osc.frequency.setValueAtTime(freq, c.currentTime + start);
+    osc.detune.setValueAtTime(detune, c.currentTime + start);
+    env.gain.setValueAtTime(0, c.currentTime + start);
+    env.gain.linearRampToValueAtTime(vol, c.currentTime + start + 0.01);
+    env.gain.exponentialRampToValueAtTime(0.001, c.currentTime + start + dur);
+    osc.start(c.currentTime + start);
+    osc.stop(c.currentTime + start + dur + 0.05);
+  }
+
+  // Frequency glide
+  function glide(f1, f2, type = "sine", start = 0, dur = 0.2, vol = 0.35) {
+    const c   = getCtx();
+    const osc = c.createOscillator();
+    const env = c.createGain();
+    osc.connect(env);
+    env.connect(c.destination);
+    osc.type = type;
+    osc.frequency.setValueAtTime(f1, c.currentTime + start);
+    osc.frequency.exponentialRampToValueAtTime(f2, c.currentTime + start + dur);
+    env.gain.setValueAtTime(vol, c.currentTime + start);
+    env.gain.exponentialRampToValueAtTime(0.001, c.currentTime + start + dur);
+    osc.start(c.currentTime + start);
+    osc.stop(c.currentTime + start + dur + 0.05);
+  }
+
+  // Noise burst (for drums/snare)
+  function noise(start = 0, dur = 0.08, vol = 0.2) {
+    const c      = getCtx();
+    const buf    = c.createBuffer(1, c.sampleRate * dur, c.sampleRate);
+    const data   = buf.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+    const src    = c.createBufferSource();
+    const filter = c.createBiquadFilter();
+    const env    = c.createGain();
+    src.buffer = buf;
+    filter.type            = "bandpass";
+    filter.frequency.value = 1800;
+    filter.Q.value         = 0.5;
+    src.connect(filter);
+    filter.connect(env);
+    env.connect(c.destination);
+    env.gain.setValueAtTime(vol, c.currentTime + start);
+    env.gain.exponentialRampToValueAtTime(0.001, c.currentTime + start + dur);
+    src.start(c.currentTime + start);
+    src.stop(c.currentTime + start + dur + 0.05);
+  }
+
+  return {
+    // 👍 Swipe right — upward whoosh + happy ping
+    swipeRight() {
+      glide(300, 900, "sine", 0, 0.18, 0.3);
+      tone(1200, "sine", 0.15, 0.2, 0.25);
+    },
+
+    // 👎 Swipe left — downward buzz
+    swipeLeft() {
+      glide(500, 120, "sawtooth", 0, 0.2, 0.2);
+      tone(80, "square", 0.05, 0.12, 0.12);
+    },
+
+    // 🔔 Player joined — soft notification ding
+    playerJoined() {
+      tone(880,  "sine", 0,    0.25, 0.2);
+      tone(1320, "sine", 0.12, 0.2,  0.12);
+    },
+
+    // ✅ Room full / game starting — "let's go" ascending chord
+    gameStart() {
+      [523, 659, 784, 1047].forEach((f, i) => tone(f, "sine", i * 0.1, 0.3, 0.28));
+    },
+
+    // ⏱ Countdown tick
+    tick() {
+      tone(660, "square", 0, 0.06, 0.15);
+    },
+
+    // 🔥 Tiebreaker — dramatic tension build
+    tiebreaker() {
+      // Low drone
+      tone(110, "sawtooth", 0,   0.6, 0.18);
+      tone(110, "sawtooth", 0,   0.6, 0.1, 5);    // slight detune for tension
+      // Rising sweep
+      glide(200, 800, "sawtooth", 0.2, 0.5, 0.2);
+      // Snare hits
+      noise(0,    0.06, 0.25);
+      noise(0.15, 0.06, 0.2);
+      noise(0.3,  0.08, 0.3);
+      noise(0.5,  0.1,  0.4);
+      // Final stab
+      tone(440, "square", 0.55, 0.25, 0.25);
+      tone(554, "square", 0.55, 0.25, 0.2);
+    },
+
+    // 🏆 Winner — triumphant fanfare
+    winner() {
+      // G-G-G-Eb-Bb-G-Eb-Bb-G (da-da-da-DUM style)
+      const notes = [
+        [392, 0],    [392, 0.15], [392, 0.3],
+        [311, 0.45, 0.35], [466, 0.6], [392, 0.75, 0.4],
+        [311, 0.95, 0.25], [466, 1.1], [784, 1.25, 0.8],
+      ];
+      notes.forEach(([f, t, vol=0.3]) => tone(f, "triangle", t, 0.28, vol));
+      // Bass line
+      [196, 196, 196, 156].forEach((f, i) => tone(f, "sine", i * 0.15, 0.25, 0.15));
+      // Snare hits
+      noise(0.45, 0.08, 0.3);
+      noise(0.75, 0.1,  0.35);
+      noise(1.25, 0.15, 0.4);
+    },
+
+    // 😅 No winner — descending "wah wah"
+    noWinner() {
+      glide(440, 311, "sawtooth", 0,    0.3, 0.25);
+      glide(370, 262, "sawtooth", 0.35, 0.3, 0.2);
+      tone(196, "sine", 0.7, 0.4, 0.2);
+    },
+
+    // ⭐ Superlike — sparkle shimmer + rising power chord
+    superlike() {
+      // Twinkle sparkles (high freq pings)
+      [1047, 1319, 1568, 2093].forEach((f, i) =>
+        tone(f, "sine", i * 0.07, 0.18, 0.18)
+      );
+      // Rising glide whoosh
+      glide(400, 1600, "sine", 0.05, 0.35, 0.22);
+      // Power sting at peak
+      tone(1568, "triangle", 0.35, 0.3,  0.3);
+      tone(1976, "triangle", 0.35, 0.25, 0.2);
+      // Low bass punch
+      tone(130,  "sine",     0,    0.25, 0.25);
+      // Final shimmer tail
+      [2093, 2637].forEach((f, i) =>
+        tone(f, "sine", 0.45 + i * 0.08, 0.2, 0.12)
+      );
+    },
+  };
+})();
+
+// Unlock audio on first user gesture (iOS / autoplay policy)
+document.addEventListener("pointerdown", () => sounds.tick && sounds, { once: true });
+
+// ═══════════════════════════════════════
+// State
+// ═══════════════════════════════════════
+const CAT_EMOJIS = {
+  burgers:"🍔", pizza:"🍕", mexican:"🌮", "fried chicken":"🍗"
+};
+
+let socket      = null;
+let roomCode    = null;
+let myName      = null;
+let isHost      = false;
+let restaurants = [];   // assigned for this game
+let cardIdx     = 0;    // current card index
+let votes       = {};   // slug → true/false
+
+let playerCount  = 4;
+let optionCount  = 6;
+let maxOptions   = 40;  // updated dynamically from pool count
+let activeCats   = new Set(["burgers","pizza","mexican","fried chicken"]);
+let maxRadius    = 0;    // 0 = all
+let hasSuperliked = false;
+let superlikedSlugs = new Set(); // slugs that have been superlikes by anyone
+
+// ═══════════════════════════════════════
+// Page nav
+// ═══════════════════════════════════════
+function showPage(id) {
+  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  if (id === "pg-create") fetchPoolCount();
+}
+
+// ═══════════════════════════════════════
+// Socket
+// ═══════════════════════════════════════
+function initSocket() {
+  if (socket) return;
+  socket = io();
+
+  socket.on("game_error", d => {
+    showError(d.msg);
+    document.getElementById("createBtn").disabled = false;
+    document.getElementById("joinBtn").disabled   = false;
+  });
+
+  socket.on("room_created", d => {
+    roomCode    = d.code;
+    isHost      = true;
+    restaurants = d.restaurants;
+    sounds.playerJoined();
+    renderLobby(d.players, d.player_count, d.restaurants, d.pool_count);
+    showPage("pg-lobby");
+  });
+
+  socket.on("joined_game", d => {
+    roomCode    = d.code;
+    isHost      = false;
+    restaurants = d.restaurants;
+    sounds.playerJoined();
+    renderLobby(d.players, d.player_count, d.restaurants, d.pool_count);
+    showPage("pg-lobby");
+  });
+
+  socket.on("restaurants_updated", d => {
+    restaurants = d.restaurants;
+    renderRestaurantList(d.restaurants);
+    const poolLabel = document.getElementById("poolCountLabel");
+    if (poolLabel) {
+      poolLabel.innerHTML = `Showing <strong>${d.restaurants.length}</strong> of <strong style="color:var(--green)">${d.pool_count}</strong> restaurants that match your filters.`;
+    }
+    const btn = document.getElementById("repullBtn");
+    if (btn) { btn.disabled = false; btn.innerHTML = "🔄 Repull"; }
+  });
+
+  socket.on("player_joined", d => {
+    updateLobbyPlayers(d.players, d.player_count);
+    if (d.players.length >= d.player_count) {
+      sounds.gameStart();
+    } else {
+      sounds.playerJoined();
+    }
+  });
+
+  socket.on("player_left", d => {
+    updateLobbyPlayers(d.players);
+  });
+
+  socket.on("game_started", d => {
+    isTiebreaker = false;
+    restaurants  = d.restaurants;
+    startSwipe();
+  });
+
+  socket.on("vote_progress", d => {
+    updateWaitProgress(d.progress, d.total);
+  });
+
+  socket.on("superlike_cast", d => {
+    superlikedSlugs.add(d.slug);
+    updateWaitProgress(d.progress, d.total);
+    // Show ⭐ badge on card if it's still visible
+    const card = document.querySelector(`.swipe-card[data-slug="${d.slug}"]`);
+    if (card && !card.querySelector(".super-badge")) {
+      const badge = document.createElement("div");
+      badge.className = "super-badge";
+      badge.textContent = "⭐ SUPERLIKES";
+      card.appendChild(badge);
+    }
+    // Toast notification
+    showSuperlikeToast();
+  });
+
+  socket.on("game_result", d => {
+    if (d.winner) sounds.winner(); else sounds.noWinner();
+    showResult(d.winner, d.results, d.mode);
+  });
+
+  socket.on("qualification_round", d => {
+    sounds.tiebreaker();
+    showQualification(d.restaurants, d.previous_results);
+  });
+
+  socket.on("ranking_progress", d => {
+    const pct = Math.round((d.done / d.total) * 100);
+    const bar  = document.getElementById("rankProgressBar");
+    const lbl  = document.getElementById("rankWaitLabel");
+    if (bar) bar.style.width = pct + "%";
+    if (lbl) lbl.textContent = `${d.done}/${d.total} players locked in`;
+  });
+}
+
+function showError(msg) {
+  ["createError","joinError"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.textContent = msg; el.style.display = "block"; }
+  });
+  setTimeout(() => {
+    ["createError","joinError"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = "none";
+    });
+  }, 5000);
+}
+
+// ═══════════════════════════════════════
+// Create / Join
+// ═══════════════════════════════════════
+function changeCount(delta) {
+  playerCount = Math.max(2, Math.min(8, playerCount + delta));
+  document.getElementById("playerCountDisplay").textContent = playerCount;
+}
+
+function changeOptions(delta) {
+  optionCount = Math.max(2, Math.min(maxOptions, optionCount + delta));
+  document.getElementById("optionCountDisplay").textContent = optionCount;
+}
+
+let _poolFetchTimer = null;
+function fetchPoolCount() {
+  clearTimeout(_poolFetchTimer);
+  _poolFetchTimer = setTimeout(() => {
+    const cats      = [...activeCats].join(",");
+    const fast      = document.getElementById("createFast")?.checked ? "true" : "false";
+    const hint      = document.getElementById("poolCountHint");
+    if (hint) hint.innerHTML = `<span style="color:var(--muted)">Checking…</span>`;
+    fetch(`/api/pool-count?cats=${encodeURIComponent(cats)}&max_radius=${maxRadius}&fast_only=${fast}`)
+      .then(r => r.json())
+      .then(d => {
+        if (!d.ok) return;
+        maxOptions  = d.count;
+        optionCount = Math.min(optionCount, maxOptions);
+        document.getElementById("optionCountDisplay").textContent = optionCount;
+        if (hint) hint.innerHTML =
+          `<span style="color:var(--green);font-weight:600">${d.count}</span> restaurants available`;
+      })
+      .catch(() => { if (hint) hint.textContent = ""; });
+  }, 400);
+}
+
+// Cat chips
+document.querySelectorAll("#createCats .chip").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const cat = btn.dataset.cat;
+    if (activeCats.has(cat)) {
+      if (activeCats.size <= 1) return;
+      activeCats.delete(cat);
+      btn.classList.remove("on");
+    } else {
+      activeCats.add(cat);
+      btn.classList.add("on");
+    }
+    fetchPoolCount();
+  });
+});
+
+// Radius chips
+document.querySelectorAll("#createRadius .chip").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll("#createRadius .chip").forEach(b => b.classList.remove("on"));
+    btn.classList.add("on");
+    maxRadius = parseInt(btn.dataset.radius) || 0;
+    fetchPoolCount();
+  });
+});
+
+// Fast only checkbox
+document.getElementById("createFast")?.addEventListener("change", fetchPoolCount);
+
+function createGame() {
+  initSocket();
+  const name = document.getElementById("hostName").value.trim() || "Host";
+  myName = name;
+  document.getElementById("createBtn").disabled = true;
+  socket.emit("create_room", {
+    host_name:    name,
+    player_count: playerCount,
+    option_count: optionCount,
+    categories:   [...activeCats],
+    max_radius:   maxRadius || null,
+    fast_only:    document.getElementById("createFast").checked,
+  });
+}
+
+function joinGame() {
+  initSocket();
+  const code = document.getElementById("joinCode").value.trim().toUpperCase();
+  const name = document.getElementById("joinName").value.trim() || "Player";
+  myName = name;
+  if (code.length !== 4) { showError("Enter a 4-letter room code."); return; }
+  document.getElementById("joinBtn").disabled = true;
+  socket.emit("join_game", { code, name });
+}
+
+// Pre-fill join form from URL ?join=ABCD
+const urlParams = new URLSearchParams(location.search);
+if (urlParams.get("join")) {
+  document.getElementById("joinCode").value = urlParams.get("join").toUpperCase();
+  showPage("pg-join");
+}
+
+// ═══════════════════════════════════════
+// Lobby
+// ═══════════════════════════════════════
+function renderLobby(players, total, rests, poolCount) {
+  document.getElementById("lobbyCode").textContent = roomCode;
+  document.getElementById("lobbyCountLabel").textContent = `(${players.length}/${total})`;
+  const link = `${location.origin}/party?join=${roomCode}`;
+  document.getElementById("lobbyLink").textContent = link;
+
+  updateLobbyPlayers(players, total);
+
+  // Show repull button for host only
+  const repullBtn = document.getElementById("repullBtn");
+  if (repullBtn) repullBtn.style.display = isHost ? "block" : "none";
+
+  // Pool count label
+  const poolLabel = document.getElementById("poolCountLabel");
+  if (poolLabel) {
+    if (poolCount != null) {
+      poolLabel.innerHTML = `Showing <strong>${rests.length}</strong> of <strong style="color:var(--green)">${poolCount}</strong> restaurants that match your filters.`;
+    } else {
+      poolLabel.textContent = `${rests.length} restaurants selected.`;
+    }
+  }
+
+  renderRestaurantList(rests);
+}
+
+function renderRestaurantList(rests) {
+  const restDiv = document.getElementById("lobbyRestaurants");
+  restDiv.innerHTML = "";
+  rests.forEach(r => {
+    const div = document.createElement("div");
+    div.style.cssText = "display:flex;align-items:center;gap:10px;padding:8px 10px;background:#12121a;border-radius:10px;font-size:0.85rem";
+    const thumb = r.image_url
+      ? `<img src="${r.image_url}?w=80" alt="" style="width:44px;height:44px;border-radius:10px;object-fit:cover;flex-shrink:0">`
+      : `<span style="font-size:1.3rem;width:44px;text-align:center">${CAT_EMOJIS[r.category]}</span>`;
+    div.innerHTML = `
+      ${thumb}
+      <div style="min-width:0">
+        <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.name}</div>
+        <div style="font-size:0.72rem;color:var(--muted)">${r.category} · ${r.score}⭐ · ${r.estimate}min</div>
+      </div>`;
+    restDiv.appendChild(div);
+  });
+}
+
+function showSuperlikeToast() {
+  const existing = document.getElementById("superToast");
+  if (existing) existing.remove();
+  const toast = document.createElement("div");
+  toast.id = "superToast";
+  toast.style.cssText = `
+    position:fixed;bottom:100px;left:50%;transform:translateX(-50%);
+    background:linear-gradient(135deg,var(--accent2),#ff9800);
+    color:#000;font-weight:800;font-size:0.9rem;padding:10px 20px;
+    border-radius:50px;z-index:9999;animation:pop 0.3s ease;
+    box-shadow:0 4px 20px rgba(255,184,48,.5);
+  `;
+  toast.textContent = "⭐ Someone used their Superlike!";
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 2500);
+}
+
+function repullRestaurants() {
+  const btn = document.getElementById("repullBtn");
+  btn.disabled = true;
+  btn.innerHTML = "⏳ Pulling…";
+  socket.emit("repull_restaurants", { code: roomCode });
+}
+
+
+function copyInviteLink() {
+  const link = document.getElementById("lobbyLink").textContent;
+  const btn  = document.getElementById("copyLinkBtn");
+
+  function showCopied() {
+    btn.innerHTML = "✅ Copied!";
+    setTimeout(() => { btn.innerHTML = "🔗 Share invite link"; }, 2000);
+  }
+
+  // Try native share (mobile)
+  if (navigator.share) {
+    navigator.share({
+      title: "🎉 Food Party — join my room!",
+      text:  "Join my Food Party game 🍔\n" + link,
+      url:   link,
+    }).catch(() => {});
+    return;
+  }
+
+  // Try clipboard API (HTTPS / localhost only)
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(link).then(showCopied).catch(fallbackCopy);
+    return;
+  }
+
+  fallbackCopy();
+
+  function fallbackCopy() {
+    const ta = document.createElement("textarea");
+    ta.value = link;
+    ta.style.cssText = "position:fixed;top:0;left:0;width:2px;height:2px;opacity:0;border:none;outline:none";
+    ta.readOnly = false;
+    document.body.appendChild(ta);
+    ta.focus();
+    // iOS needs setSelectionRange after focus
+    ta.setSelectionRange(0, 99999);
+    ta.select();
+    try {
+      const ok = document.execCommand("copy");
+      if (ok) showCopied();
+      else window.prompt("Copy this link 👇", link);
+    } catch(e) {
+      window.prompt("Copy this link 👇", link);
+    }
+    document.body.removeChild(ta);
+  }
+}
+
+function updateLobbyPlayers(players, total) {
+  const list = document.getElementById("lobbyPlayerList");
+  const max  = total || players.length;
+  list.innerHTML = "";
+  for (let i = 0; i < max; i++) {
+    const div  = document.createElement("div");
+    div.className = "player-item";
+    const filled = i < players.length;
+    div.innerHTML = `
+      <div class="player-dot ${filled ? "" : "empty"}"></div>
+      ${filled
+        ? `<span>${players[i]}</span>${i === 0 ? '<span class="host-badge">HOST</span>' : ''}`
+        : `<span class="slot-label">Waiting for player ${i+1}…</span>`}`;
+    list.appendChild(div);
+  }
+  document.getElementById("lobbyCountLabel").textContent = `(${players.length}/${max})`;
+}
+
+// ═══════════════════════════════════════
+// Qualification / Tiebreaker
+// ═══════════════════════════════════════
+let isTiebreaker = false;
+
+function showQualification(rests, prevResults) {
+  isTiebreaker = true;
+  restaurants  = rests;
+
+  document.getElementById("qualifySubtitle").textContent =
+    `${rests.length} restaurants got 100% approval! Rank them to pick the winner.`;
+
+  const list = document.getElementById("qualifyList");
+  list.innerHTML = "";
+  rests.forEach(r => {
+    const div = document.createElement("div");
+    div.style.cssText = "display:flex;align-items:center;gap:10px;padding:10px 12px;background:#12121a;border-radius:12px;border:1.5px solid var(--accent2)";
+    const thumb = r.image_url
+      ? `<img src="${r.image_url}?w=80" style="width:44px;height:44px;border-radius:8px;object-fit:cover;flex-shrink:0">`
+      : `<span style="font-size:1.4rem;width:44px;text-align:center">${CAT_EMOJIS[r.category]}</span>`;
+    div.innerHTML = `${thumb}
+      <div style="min-width:0;text-align:left">
+        <div style="font-weight:700;font-size:0.9rem">${r.name}</div>
+        <div style="font-size:0.72rem;color:var(--muted)">${r.category} · ⭐${r.score.toFixed(1)}</div>
+      </div>
+      <span style="margin-left:auto;font-size:0.8rem;font-weight:700;color:var(--accent2)">100% ✓</span>`;
+    list.appendChild(div);
+  });
+
+  showPage("pg-qualify");
+
+  // Countdown 3 → 2 → 1 → go
+  let count = 3;
+  const el  = document.getElementById("qualifyCountdown");
+  const tick = setInterval(() => {
+    count--;
+    if (count > 0) {
+      sounds.tick();
+      el.textContent = `Starting in ${count}…`;
+    } else {
+      clearInterval(tick);
+      sounds.gameStart();
+      startRanking();
+    }
+  }, 1000);
+}
+
+// ═══════════════════════════════════════
+// Ranking screen
+// ═══════════════════════════════════════
+let rankOrder = [];   // array of restaurant objects in current rank order
+
+function startRanking() {
+  rankOrder = [...restaurants];   // start in received order
+  renderRankList();
+  document.getElementById("rankWaiting").style.display   = "none";
+  document.getElementById("rankSubmitBtn").style.display = "block";
+  showPage("pg-ranking");
+}
+
+function renderRankList() {
+  const list = document.getElementById("rankList");
+  list.innerHTML = "";
+
+  rankOrder.forEach((r, idx) => {
+    const item = document.createElement("div");
+    item.className      = "rank-item";
+    item.dataset.slug   = r.slug;
+    item.dataset.idx    = idx;
+
+    const thumb = r.image_url
+      ? `<img class="rank-thumb" src="${r.image_url}?w=80" alt="">`
+      : `<div class="rank-thumb-emoji">${CAT_EMOJIS[r.category]}</div>`;
+
+    item.innerHTML = `
+      <div class="drag-handle">⠿</div>
+      <div class="rank-num">${idx + 1}</div>
+      ${thumb}
+      <div class="rank-info">
+        <div class="rname">${r.name}</div>
+        <div class="rmeta">${r.category} · ⭐${r.score.toFixed(1)} · 🕐${r.estimate}min</div>
+      </div>
+      <div class="rank-arrows">
+        <button class="rank-arrow" onclick="moveRank(${idx},-1)" ${idx===0?'disabled':''}>▲</button>
+        <button class="rank-arrow" onclick="moveRank(${idx}, 1)" ${idx===rankOrder.length-1?'disabled':''}>▼</button>
+      </div>`;
+
+    attachRankDrag(item, idx);
+    list.appendChild(item);
+  });
+}
+
+function moveRank(idx, dir) {
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= rankOrder.length) return;
+  [rankOrder[idx], rankOrder[newIdx]] = [rankOrder[newIdx], rankOrder[idx]];
+  sounds.tick();
+  renderRankList();
+}
+
+// ── Drag-to-reorder ─────────────────────────────────────────
+function attachRankDrag(item, idx) {
+  let startY   = 0;
+  let startIdx = 0;
+  let clone    = null;
+  let origRect = null;
+
+  function onStart(e) {
+    e.preventDefault();
+    startY   = (e.touches ? e.touches[0] : e).clientY;
+    startIdx = idx;
+    origRect = item.getBoundingClientRect();
+
+    // Create floating clone
+    clone = item.cloneNode(true);
+    clone.style.cssText = `
+      position:fixed;left:${origRect.left}px;top:${origRect.top}px;
+      width:${origRect.width}px;z-index:999;pointer-events:none;
+      box-shadow:0 8px 32px rgba(0,0,0,.5);
+      border-color:var(--accent);opacity:0.95;
+      transition:none;
+    `;
+    document.body.appendChild(clone);
+    item.classList.add("dragging");
+  }
+
+  function onMove(e) {
+    if (!clone) return;
+    e.preventDefault();
+    const y   = (e.touches ? e.touches[0] : e).clientY;
+    const dy  = y - startY;
+    clone.style.top = (origRect.top + dy) + "px";
+
+    // Determine which slot we're hovering over
+    const items = [...document.querySelectorAll(".rank-item:not(.dragging)")];
+    let   target = startIdx;
+    items.forEach(el => {
+      const r = el.getBoundingClientRect();
+      if (y > r.top && y < r.bottom) {
+        target = parseInt(el.dataset.idx);
+      }
+    });
+
+    document.querySelectorAll(".rank-item").forEach(el => el.classList.remove("drag-over"));
+    if (target !== startIdx) {
+      items.find(el => parseInt(el.dataset.idx) === target)?.classList.add("drag-over");
+    }
+    item._dropTarget = target;
+  }
+
+  function onEnd(e) {
+    if (!clone) return;
+    clone.remove();
+    clone = null;
+    item.classList.remove("dragging");
+    document.querySelectorAll(".rank-item").forEach(el => el.classList.remove("drag-over"));
+
+    const dropIdx = item._dropTarget ?? startIdx;
+    if (dropIdx !== startIdx) {
+      // Reorder
+      const [moved] = rankOrder.splice(startIdx, 1);
+      rankOrder.splice(dropIdx, 0, moved);
+      sounds.tick();
+      renderRankList();
+    }
+  }
+
+  item.addEventListener("pointerdown", onStart, {passive:false});
+  document.addEventListener("pointermove", onMove, {passive:false});
+  document.addEventListener("pointerup",   onEnd);
+}
+
+function submitRanking() {
+  sounds.gameStart();
+  socket.emit("cast_ranking", {
+    code:     roomCode,
+    rankings: rankOrder.map(r => r.slug),
+  });
+  document.getElementById("rankSubmitBtn").style.display = "none";
+  document.getElementById("rankWaiting").style.display   = "block";
+}
+
+// ═══════════════════════════════════════
+// Swipe screen
+// ═══════════════════════════════════════
+function updateSuperlikeBtn() {
+  const btn  = document.getElementById("superlikeBtn");
+  const hint = document.getElementById("superlikeHint");
+  if (!btn) return;
+  if (hasSuperliked) {
+    btn.classList.add("used");
+    btn.disabled = true;
+    btn.title = "Superlike already used";
+    if (hint) hint.textContent = "⭐ Superlike used";
+  } else {
+    btn.classList.remove("used");
+    btn.disabled = false;
+    btn.title = "Superlike — promotes to finals!";
+    if (hint) hint.textContent = "⭐ 1 superlike — guarantees this place reaches the finals";
+  }
+}
+
+function startSwipe() {
+  cardIdx = 0;
+  votes   = {};
+  hasSuperliked = false;
+  superlikedSlugs = new Set();
+  updateSuperlikeBtn();
+  document.getElementById("waitingOthers").style.display = "none";
+  document.querySelectorAll(".action-btn").forEach(b => b.style.display = "flex");
+
+  if (isTiebreaker) {
+    document.getElementById("swipeTitle").innerHTML =
+      '🔥 <span style="color:var(--red)">Tiebreaker Round!</span>';
+    document.getElementById("swipeSub").textContent =
+      "All these got 100% — vote again to pick the one";
+  } else {
+    document.getElementById("swipeTitle").textContent = "Swipe to vote";
+    document.getElementById("swipeSub").textContent =
+      "Right = 👍 Wanna order this · Left = 👎 Nope";
+  }
+
+  buildProgressDots();
+  renderCards();
+  showPage("pg-swipe");
+}
+
+function buildProgressDots() {
+  const wrap = document.getElementById("progressDots");
+  wrap.innerHTML = "";
+  restaurants.forEach((_, i) => {
+    const d = document.createElement("div");
+    d.className = "pdot" + (i === 0 ? " active" : "");
+    d.id = `pdot-${i}`;
+    wrap.appendChild(d);
+  });
+}
+
+function updateDots() {
+  restaurants.forEach((_, i) => {
+    const d = document.getElementById(`pdot-${i}`);
+    if (!d) return;
+    d.className = "pdot" + (i < cardIdx ? " done" : i === cardIdx ? " active" : "");
+  });
+}
+
+// ── Card rendering & drag ──────────────
+function renderCards() {
+  const stack = document.getElementById("cardStack");
+  stack.innerHTML = "";
+  const show = Math.min(2, restaurants.length - cardIdx);
+  for (let i = show - 1; i >= 0; i--) {
+    const r   = restaurants[cardIdx + i];
+    const card = buildCard(r, i === 0);
+    stack.appendChild(card);
+  }
+}
+
+function buildCard(r, isTop) {
+  const card = document.createElement("div");
+  card.className = "swipe-card " + (isTop ? "top" : "behind");
+  card.dataset.slug = r.slug;
+
+  const distStr = r.dist_m != null
+    ? (r.dist_m >= 1000 ? (r.dist_m/1000).toFixed(1)+"km" : r.dist_m+"m")
+    : "";
+
+  const imgHtml = r.image_url
+    ? `<img class="card-img" src="${r.image_url}" alt="${r.name}" loading="lazy"
+            onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+    : "";
+  const placeholderHtml = `<div class="card-img-placeholder" style="${r.image_url ? 'display:none' : ''}">${CAT_EMOJIS[r.category]}</div>`;
+
+  card.innerHTML = `
+    <div class="overlay like">LIKE ❤</div>
+    <div class="overlay nope">✕ NOPE</div>
+    ${imgHtml}${placeholderHtml}
+    <div class="card-name">${r.name}</div>
+    <div class="card-tags">
+      <span class="card-tag tag-cat">${r.category}</span>
+      <span class="card-tag tag-score">⭐ ${r.score.toFixed(1)}</span>
+      ${r.estimate ? `<span class="card-tag tag-est">🕐 ${r.estimate}min</span>` : ""}
+      ${distStr     ? `<span class="card-tag tag-dist">📍 ${distStr}</span>` : ""}
+    </div>
+    <div class="card-desc">${r.desc || ""}</div>
+  `;
+
+  if (isTop) attachDrag(card, r);
+  return card;
+}
+
+const THRESHOLD = 110; // px to trigger vote
+
+function attachDrag(card, r) {
+  let startX = 0, startY = 0, curX = 0, curY = 0, dragging = false;
+
+  function onStart(e) {
+    dragging = true;
+    const pt = e.touches ? e.touches[0] : e;
+    startX = pt.clientX; startY = pt.clientY;
+    card.style.transition = "none";
+    card.setPointerCapture && card.setPointerCapture(e.pointerId);
+  }
+
+  function onMove(e) {
+    if (!dragging) return;
+    const pt = e.touches ? e.touches[0] : e;
+    curX = pt.clientX - startX;
+    curY = pt.clientY - startY;
+    const rotate = curX * 0.08;
+    card.style.transform = `translate(${curX}px,${curY}px) rotate(${rotate}deg)`;
+
+    const likeEl = card.querySelector(".overlay.like");
+    const nopeEl = card.querySelector(".overlay.nope");
+
+    // Swipe up = superlike
+    if (curY < -40 && Math.abs(curX) < THRESHOLD && !hasSuperliked) {
+      const ratio = Math.min(Math.abs(curY) / THRESHOLD, 1);
+      likeEl.textContent = "⭐ SUPER";
+      likeEl.style.opacity = ratio;
+      nopeEl.style.opacity = 0;
+    } else {
+      likeEl.textContent = "LIKE ❤";
+      const ratio = Math.min(Math.abs(curX) / THRESHOLD, 1);
+      if (curX > 0) {
+        likeEl.style.opacity = ratio;
+        nopeEl.style.opacity = 0;
+      } else {
+        nopeEl.style.opacity = ratio;
+        likeEl.style.opacity = 0;
+      }
+    }
+    e.preventDefault();
+  }
+
+  function onEnd() {
+    if (!dragging) return;
+    dragging = false;
+    card.style.transition = "transform 0.3s cubic-bezier(.34,1.56,.64,1)";
+
+    // Swipe up = superlike (Y < -THRESHOLD, X within bounds)
+    if (curY < -THRESHOLD && Math.abs(curX) < THRESHOLD && !hasSuperliked) {
+      hasSuperliked = true;
+      updateSuperlikeBtn();
+      sounds.superlike();
+      socket.emit("cast_superlike", { code: roomCode, slug: r.slug });
+      flyOutUp(card, r.slug);
+      return;
+    }
+
+    if (curX > THRESHOLD) {
+      flyOut(card, 1, r.slug, true);
+    } else if (curX < -THRESHOLD) {
+      flyOut(card, -1, r.slug, false);
+    } else {
+      card.style.transform = "translate(0,0) rotate(0deg)";
+      card.querySelector(".overlay.like").style.opacity = 0;
+      card.querySelector(".overlay.nope").style.opacity = 0;
+    }
+  }
+
+  // Pointer events (desktop + mobile)
+  card.addEventListener("pointerdown", onStart);
+  card.addEventListener("pointermove", onMove, {passive:false});
+  card.addEventListener("pointerup",   onEnd);
+  card.addEventListener("pointercancel", onEnd);
+}
+
+function flyOut(card, dir, slug, vote) {
+  card.style.transition = "transform 0.4s ease, opacity 0.4s ease";
+  card.style.transform  = `translate(${dir * 800}px, 0) rotate(${dir * 30}deg)`;
+  card.style.opacity    = "0";
+  castVoteFor(slug, vote);
+  setTimeout(nextCard, 350);
+}
+
+function castVote(vote) {
+  if (cardIdx >= restaurants.length) return;
+  const r = restaurants[cardIdx];
+  const card = document.querySelector(".swipe-card.top");
+  if (card) flyOut(card, vote ? 1 : -1, r.slug, vote);
+  else castVoteFor(r.slug, vote);
+}
+
+function castSuperlike() {
+  if (cardIdx >= restaurants.length) return;
+  if (hasSuperliked) return;
+  const r    = restaurants[cardIdx];
+  const card = document.querySelector(".swipe-card.top");
+  hasSuperliked = true;
+  updateSuperlikeBtn();
+  sounds.superlike();
+  socket.emit("cast_superlike", { code: roomCode, slug: r.slug });
+  if (card) flyOutUp(card, r.slug);
+  else nextCard();
+}
+
+function flyOutUp(card, slug) {
+  card.style.transition = "transform 0.45s cubic-bezier(.2,-0.5,.8,1.5), opacity 0.45s ease";
+  card.style.transform  = "translate(0, -900px) rotate(-8deg)";
+  card.style.opacity    = "0";
+  // Show superlike overlay
+  const like = card.querySelector(".overlay.like");
+  if (like) { like.textContent = "⭐ SUPER"; like.style.opacity = "1"; }
+  setTimeout(nextCard, 400);
+}
+
+function castVoteFor(slug, vote) {
+  votes[slug] = vote;
+  if (vote) sounds.swipeRight(); else sounds.swipeLeft();
+  socket.emit("cast_vote", { code: roomCode, slug, vote });
+}
+
+function nextCard() {
+  cardIdx++;
+  updateDots();
+
+  if (cardIdx >= restaurants.length) {
+    // All done
+    document.getElementById("cardStack").innerHTML = "";
+    document.querySelectorAll(".action-btn").forEach(b => b.style.display = "none");
+    document.getElementById("waitingOthers").style.display = "block";
+    return;
+  }
+  renderCards();
+}
+
+function updateWaitProgress(progress, total) {
+  const done  = Object.values(progress).filter(v => v >= total).length;
+  const count = Object.keys(progress).length;
+  const pct   = count > 0 ? Math.round((done / count) * 100) : 0;
+  document.getElementById("waitProgressBar").style.width = pct + "%";
+  document.getElementById("waitProgressLabel").textContent =
+    `${done}/${count} players finished`;
+}
+
+// ═══════════════════════════════════════
+// Result
+// ═══════════════════════════════════════
+function showResult(winner, results, mode) {
+  showPage("pg-result");
+  if (winner) sounds.winner(); else sounds.noWinner();
+
+  const winnerEl   = document.getElementById("resultWinner");
+  const noWinnerEl = document.getElementById("resultNoWinner");
+
+  if (winner) {
+    winnerEl.style.display   = "block";
+    noWinnerEl.style.display = "none";
+    document.getElementById("winnerName").textContent = winner.restaurant.name;
+    const wImg = document.getElementById("winnerImg");
+    const wEmoji = document.getElementById("winnerEmoji");
+    if (winner.restaurant.image_url) {
+      wImg.src = winner.restaurant.image_url;
+      wImg.style.display = "block";
+      wEmoji.style.display = "none";
+    } else {
+      wImg.style.display = "none";
+      wEmoji.textContent = CAT_EMOJIS[winner.restaurant.category];
+      wEmoji.style.display = "block";
+    }
+    document.getElementById("winnerMeta").textContent = mode === "ranking"
+      ? `Avg rank: #${winner.avg_rank.toFixed(2)} · ⭐ ${winner.restaurant.score.toFixed(1)} · 🕐 ${winner.restaurant.estimate}min`
+      : `${winner.yes}/${winner.total} players agreed · ⭐ ${winner.restaurant.score.toFixed(1)} · 🕐 ${winner.restaurant.estimate}min`;
+    document.getElementById("winnerLink").href = winner.restaurant.wolt;
+
+    // Vote bar
+    const barWrap = document.getElementById("winnerVoteBar");
+    barWrap.innerHTML = `
+      <div class="vote-bar-label">
+        <span>Approval</span><span>${winner.pct}%</span>
+      </div>
+      <div class="vote-bar-bg">
+        <div class="vote-bar-fill majority" style="width:${winner.pct}%"></div>
+      </div>`;
+  } else {
+    winnerEl.style.display   = "none";
+    noWinnerEl.style.display = "block";
+  }
+
+  // Table — different columns for ranking vs voting
+  const thead = document.getElementById("resultTableHead");
+  const tbody = document.getElementById("resultTableBody");
+  const isRanking = mode === "ranking";
+
+  thead.innerHTML = `<tr>
+    <th>Restaurant</th>
+    ${isRanking
+      ? `<th>Avg Rank</th><th>#1 votes</th>`
+      : `<th>👍</th><th>👎</th><th>%</th>`}
+    <th>⭐</th>
+  </tr>`;
+
+  tbody.innerHTML = "";
+  results.forEach((entry, pos) => {
+    const r   = entry.restaurant;
+    const win = pos === 0 && isRanking;
+    const tr  = document.createElement("tr");
+    if (win || (!isRanking && entry.pct >= 70)) tr.className = "winner-row";
+    const superCell = entry.superlike_count
+      ? `<td class="superlike-count">×${entry.superlike_count}</td>`
+      : `<td style="color:var(--border)">—</td>`;
+
+    if (isRanking) {
+      tr.innerHTML = `
+        <td>${pos + 1}. ${CAT_EMOJIS[r.category]} ${r.name}</td>
+        <td style="color:var(--accent2);font-weight:700">${entry.avg_rank.toFixed(2)}</td>
+        <td style="color:var(--green)">${entry.yes}</td>
+        ${superCell}`;
+    } else {
+      const cls = entry.pct >= 70 ? "majority" : "";
+      tr.innerHTML = `
+        <td>${CAT_EMOJIS[r.category]} ${r.name}</td>
+        <td style="color:var(--green);font-weight:700">${entry.yes}</td>
+        <td style="color:var(--red)">${entry.no}</td>
+        <td class="pct-cell ${cls}">${entry.pct}%</td>
+        ${superCell}`;
+    }
+    tbody.appendChild(tr);
+  });
+}
+
+function playAgain() {
+  socket.emit("restart_game", { code: roomCode });
+}
+</script>
+</body>
+</html>

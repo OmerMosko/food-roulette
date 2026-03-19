@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🎰 Food Roulette — Tel Aviv</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f0f13;
+      --card: #1a1a24;
+      --accent: #ff6b35;
+      --accent2: #ffb830;
+      --green: #00d4aa;
+      --red: #ff4d6d;
+      --text: #f0f0f0;
+      --muted: #777;
+      --border: #2a2a38;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px 48px;
+    }
+
+    header { text-align: center; margin-bottom: 10px; }
+
+    header h1 {
+      font-size: clamp(1.6rem, 5vw, 2.4rem);
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    header p { color: var(--muted); font-size: 0.85rem; margin-top: 4px; }
+
+    /* Status bar */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 12px auto 18px;
+      font-size: 0.8rem;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-weight: 600;
+    }
+
+    .status-pill.green { color: var(--green); }
+    .status-pill.orange { color: var(--accent2); }
+
+    .btn-refresh {
+      background: transparent;
+      border: 1.5px solid var(--border);
+      color: var(--muted);
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-size: 0.78rem;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+    }
+
+    .btn-refresh:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-refresh:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* Loading */
+    #loadingScreen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      padding: 40px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .spinner {
+      width: 40px; height: 40px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Main app */
+    #app { display: none; width: 100%; max-width: 720px; }
+    #app.ready { display: block; }
+
+    /* Category chips */
+    .filter-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    .chip {
+      padding: 6px 16px;
+      border-radius: 50px;
+      border: 1.5px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 0.82rem;
+      font-weight: 600;
+      transition: all 0.15s;
+      user-select: none;
+    }
+
+    .chip.on {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(255,107,53,0.1);
+    }
+
+    /* Radius row */
+    .radius-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 18px;
+    }
+
+    .radius-label {
+      font-size: 0.75rem;
+      color: var(--muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-right: 4px;
+    }
+
+    .radius-btn {
+      padding: 6px 15px;
+      border-radius: 50px;
+      border: 1.5px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 0.82rem;
+      font-weight: 600;
+      transition: all 0.15s;
+      user-select: none;
+    }
+
+    .radius-btn.on {
+      border-color: #4cc9f0;
+      color: #4cc9f0;
+      background: rgba(76, 201, 240, 0.1);
+    }
+
+    /* Wheel */
+    .wheel-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    #wheelCanvas {
+      border-radius: 50%;
+      box-shadow: 0 0 40px rgba(255,107,53,0.25), 0 0 80px rgba(255,107,53,0.08);
+      cursor: pointer;
+      max-width: 100%;
+    }
+
+    .pointer {
+      position: absolute;
+      right: -14px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 0; height: 0;
+      border-top: 18px solid transparent;
+      border-bottom: 18px solid transparent;
+      border-right: 36px solid var(--accent);
+      filter: drop-shadow(0 0 8px rgba(255,107,53,0.8));
+      z-index: 10;
+    }
+
+    #emptyMsg {
+      display: none;
+      position: absolute;
+      text-align: center;
+      pointer-events: none;
+      font-size: 0.85rem;
+      color: var(--muted);
+      padding: 0 40px;
+    }
+
+    #spinBtn {
+      display: block;
+      margin: 0 auto 24px;
+      padding: 15px 48px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+      box-shadow: 0 4px 20px rgba(255,107,53,0.4);
+    }
+
+    #spinBtn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(255,107,53,0.55); }
+    #spinBtn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    /* Result card */
+    #result {
+      display: none;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 22px 26px;
+      text-align: center;
+      max-width: 420px;
+      width: 100%;
+      margin: 0 auto 28px;
+      animation: pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+    }
+
+    @keyframes pop {
+      from { transform: scale(0.7); opacity: 0; }
+      to   { transform: scale(1);   opacity: 1; }
+    }
+
+    #result.show { display: block; }
+
+    #result .emoji-big { font-size: 3rem; margin-bottom: 8px; }
+    #result .rest-name { font-size: 1.45rem; font-weight: 800; color: var(--accent2); margin-bottom: 4px; }
+
+    .tag-row { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin-bottom: 10px; }
+
+    .tag {
+      display: inline-block;
+      border-radius: 20px;
+      padding: 3px 11px;
+      font-size: 0.73rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .tag.cat    { background: rgba(255,107,53,0.15); color: var(--accent); }
+    .tag.score  { background: rgba(255,184,48,0.15);  color: var(--accent2); }
+    .tag.time   { background: rgba(0,212,170,0.12);   color: var(--green); }
+
+    #result .desc { color: var(--muted); font-size: 0.85rem; line-height: 1.5; margin-bottom: 16px; }
+
+    .btn-wolt {
+      display: inline-block;
+      padding: 11px 30px;
+      background: var(--green);
+      color: #0a2420;
+      font-weight: 700;
+      border-radius: 50px;
+      text-decoration: none;
+      font-size: 0.93rem;
+      box-shadow: 0 4px 16px rgba(0,212,170,0.3);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+
+    .btn-wolt:hover { transform: translateY(-2px); box-shadow: 0 6px 22px rgba(0,212,170,0.5); }
+
+    /* Grid */
+    .list-section { width: 100%; }
+
+    .list-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .list-header h2 {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--muted);
+    }
+
+    .list-count { font-size: 0.72rem; color: var(--muted); }
+
+    .rest-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 8px;
+    }
+
+    .rest-card {
+      background: var(--card);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 13px;
+      display: flex;
+      align-items: flex-start;
+      gap: 9px;
+      transition: border-color 0.2s, transform 0.15s, opacity 0.2s;
+      position: relative;
+    }
+
+    .rest-card.open-card { cursor: pointer; }
+    .rest-card.open-card:hover { border-color: var(--accent); transform: translateY(-1px); }
+    .rest-card.active { border-color: var(--accent2); background: rgba(255,184,48,0.07); }
+    .rest-card.excluded { opacity: 0.3; filter: grayscale(1); }
+    .rest-card.closed-card { opacity: 0.22; filter: grayscale(1); cursor: default; }
+
+    .card-emoji { font-size: 1.35rem; flex-shrink: 0; padding-top: 1px; }
+
+    .card-info { min-width: 0; }
+
+    .card-name {
+      font-size: 0.82rem;
+      font-weight: 600;
+      line-height: 1.2;
+      margin-bottom: 3px;
+    }
+
+    .card-meta {
+      font-size: 0.68rem;
+      color: var(--muted);
+      display: flex;
+      gap: 5px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .dot-open  { color: var(--green); font-weight: 700; }
+    .dot-closed { color: var(--red); font-weight: 700; }
+    .score-badge { color: var(--accent2); font-weight: 700; }
+    .est-badge   { color: var(--muted); }
+
+    footer { margin-top: 32px; font-size: 0.72rem; color: #333; text-align: center; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🎰 Food Roulette</h1>
+  <p>📍 HaShoftim 26, Tel Aviv · Live from Wolt</p>
+  <a href="/party" style="display:inline-block;margin-top:8px;padding:6px 18px;background:rgba(76,201,240,.12);color:#4cc9f0;border:1.5px solid rgba(76,201,240,.3);border-radius:20px;font-size:0.8rem;font-weight:700;text-decoration:none">🎉 Multiplayer Party Mode →</a>
+</header>
+
+<div class="status-bar">
+  <div class="status-pill green" id="openCount">⏳ Loading…</div>
+  <div class="status-pill orange" id="clockPill">🕐 --:--</div>
+  <button class="btn-refresh" id="refreshBtn" onclick="loadData()">↻ Refresh</button>
+</div>
+
+<!-- Loading -->
+<div id="loadingScreen">
+  <div class="spinner"></div>
+  <span>Fetching live Wolt data…</span>
+</div>
+
+<!-- Main App -->
+<div id="app">
+  <div class="filter-row" id="filterRow"></div>
+  <div class="filter-row">
+    <button class="chip" id="fastChip" onclick="toggleFast()">⚡ Fast only (≤45 min)</button>
+  </div>
+  <div class="radius-row" id="radiusRow"></div>
+
+  <div class="wheel-wrap">
+    <canvas id="wheelCanvas" width="320" height="320"></canvas>
+    <div class="pointer"></div>
+    <div id="emptyMsg">No open restaurants<br>in selected categories</div>
+  </div>
+
+  <button id="spinBtn" onclick="spin()">🎲 Spin the Wheel!</button>
+
+  <div id="result">
+    <div class="emoji-big" id="resEmoji"></div>
+    <div class="rest-name" id="resName"></div>
+    <div class="tag-row">
+      <span class="tag cat"   id="resCuisine"></span>
+      <span class="tag score" id="resScore"></span>
+      <span class="tag time"  id="resEst"></span>
+      <span class="tag time"  id="resDist" style="background:rgba(76,201,240,0.12);color:#4cc9f0"></span>
+    </div>
+    <div class="desc" id="resDesc"></div>
+    <a id="resLink" class="btn-wolt" href="#" target="_blank" rel="noopener">🛵 Order on Wolt</a>
+  </div>
+
+  <div class="list-section">
+    <div class="list-header">
+      <h2>All restaurants (8+ rating) · tap to exclude/include</h2>
+      <span class="list-count" id="listCount"></span>
+    </div>
+    <div class="rest-grid" id="restGrid"></div>
+  </div>
+</div>
+
+<footer>Live data from Wolt API · HaShoftim 26, Tel Aviv · Hit Refresh for latest status</footer>
+
+<script>
+const CATEGORIES = [
+  { key: "burgers",       label: "🍔 Burgers",       color: "#e63946" },
+  { key: "pizza",         label: "🍕 Pizza",          color: "#e9762b" },
+  { key: "mexican",       label: "🌮 Mexican",        color: "#2d6a4f" },
+  { key: "fried chicken", label: "🍗 Fried Chicken",  color: "#f4a300" },
+];
+
+const CAT_EMOJIS   = { burgers: "🍔", pizza: "🍕", mexican: "🌮", "fried chicken": "🍗" };
+const CAT_COLORS   = { burgers: "#e63946", pizza: "#e9762b", mexican: "#2d6a4f", "fried chicken": "#f4a300" };
+// Lighter variants for alternating slices
+const CAT_COLORS2  = { burgers: "#c02a35", pizza: "#c45c14", mexican: "#1e4d38", "fried chicken": "#c07c00" };
+
+const RADIUS_OPTIONS = [
+  { label: "📍 500m",  value: 500  },
+  { label: "🚶 1km",   value: 1000 },
+  { label: "🚴 2km",   value: 2000 },
+  { label: "🌆 5km",   value: 5000 },
+  { label: "🌍 All",   value: Infinity },
+];
+
+let ALL_RESTAURANTS = [];
+let activeCategories = new Set(CATEGORIES.map(c => c.key));
+let manualExcluded   = new Set();
+let fastOnly         = false;
+let maxRadius        = Infinity;
+let spinning         = false;
+let currentAngle     = 0;
+
+// Parse "35-45" → upper bound integer (45)
+function maxEst(est) {
+  if (!est) return 999;
+  const parts = est.split("-");
+  return parseInt(parts[parts.length - 1]) || 999;
+}
+
+function isFast(r) { return maxEst(r.estimate) <= 45; }
+
+const canvas  = document.getElementById("wheelCanvas");
+const ctx     = canvas.getContext("2d");
+
+// ── Helpers ───────────────────────────────────────────────────
+function inRadius(r) {
+  return maxRadius === Infinity || (r.dist_m != null && r.dist_m <= maxRadius);
+}
+
+function getWheelItems() {
+  return ALL_RESTAURANTS.filter((r, i) =>
+    r.online &&
+    activeCategories.has(r.category) &&
+    !manualExcluded.has(i) &&
+    (!fastOnly || isFast(r)) &&
+    inRadius(r)
+  );
+}
+
+function fmtIsraelTime() {
+  return new Date().toLocaleTimeString("en-GB", {
+    timeZone: "Asia/Jerusalem",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
+// ── Load data from Flask backend ──────────────────────────────
+async function loadData() {
+  document.getElementById("loadingScreen").style.display = "flex";
+  document.getElementById("app").classList.remove("ready");
+  document.getElementById("refreshBtn").disabled = true;
+  document.getElementById("openCount").textContent = "⏳ Loading…";
+
+  try {
+    const res  = await fetch("/api/restaurants");
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error);
+    ALL_RESTAURANTS = json.restaurants;
+    manualExcluded  = new Set();
+    buildChips();
+    buildRadiusButtons();
+    buildGrid();
+    drawWheel(currentAngle);
+    updateCountBadge();
+    document.getElementById("loadingScreen").style.display = "none";
+    document.getElementById("app").classList.add("ready");
+  } catch (e) {
+    document.getElementById("loadingScreen").innerHTML =
+      `<div style="color:#ff4d6d">⚠️ Failed to load: ${e.message}<br><br>
+       <button onclick="loadData()" style="padding:8px 20px;background:#ff6b35;color:#fff;border:none;border-radius:20px;cursor:pointer">Retry</button></div>`;
+  }
+
+  document.getElementById("refreshBtn").disabled = false;
+}
+
+function updateCountBadge() {
+  const open  = ALL_RESTAURANTS.filter(r => r.online).length;
+  const total = ALL_RESTAURANTS.length;
+  document.getElementById("openCount").textContent = `✅ ${open} open of ${total}`;
+}
+
+// ── Draw Wheel ────────────────────────────────────────────────
+function drawWheel(angle) {
+  const items = getWheelItems();
+  const cx = canvas.width / 2, cy = canvas.height / 2, rad = cx - 4;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  if (items.length === 0) {
+    document.getElementById("emptyMsg").style.display = "";
+    document.getElementById("spinBtn").disabled = true;
+    ctx.beginPath();
+    ctx.arc(cx, cy, rad, 0, 2 * Math.PI);
+    ctx.fillStyle = "#1a1a24";
+    ctx.fill();
+    return;
+  }
+
+  document.getElementById("emptyMsg").style.display = "none";
+  document.getElementById("spinBtn").disabled = spinning;
+
+  const slice = (2 * Math.PI) / items.length;
+  const small = items.length > 12;
+
+  items.forEach((r, i) => {
+    const start = angle + i * slice;
+    const end   = start + slice;
+    const col   = i % 2 === 0 ? CAT_COLORS[r.category] : CAT_COLORS2[r.category];
+
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, rad, start, end);
+    ctx.closePath();
+    ctx.fillStyle = col;
+    ctx.fill();
+    ctx.strokeStyle = "rgba(0,0,0,0.3)";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(start + slice / 2);
+    ctx.textAlign = "right";
+
+    // Emoji
+    ctx.font = `${small ? 12 : 15}px serif`;
+    ctx.fillText(CAT_EMOJIS[r.category], rad - 8, 4);
+
+    // Name
+    ctx.font = `bold ${small ? 8 : 10}px 'Segoe UI', sans-serif`;
+    ctx.fillStyle = "#fff";
+    ctx.shadowColor = "rgba(0,0,0,0.8)";
+    ctx.shadowBlur = 3;
+    const maxLen = small ? 9 : 13;
+    const label  = r.name.length > maxLen ? r.name.slice(0, maxLen - 1) + "…" : r.name;
+    ctx.fillText(label, rad - 26, 4);
+    ctx.shadowBlur = 0;
+    ctx.restore();
+  });
+
+  // Center hub
+  ctx.beginPath();
+  ctx.arc(cx, cy, 22, 0, 2 * Math.PI);
+  ctx.fillStyle = "#0f0f13";
+  ctx.fill();
+  ctx.strokeStyle = "#2a2a38";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.font = "17px serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("🎰", cx, cy);
+}
+
+// ── Spin ──────────────────────────────────────────────────────
+function spin() {
+  if (spinning || getWheelItems().length === 0) return;
+  spinning = true;
+  document.getElementById("spinBtn").disabled = true;
+  document.getElementById("result").classList.remove("show");
+
+  const total    = (Math.random() * 6 + 8) * 2 * Math.PI;
+  const duration = 4000 + Math.random() * 1000;
+  const startAng = currentAngle;
+  const t0       = performance.now();
+
+  function ease(t) { return 1 - Math.pow(1 - t, 3); }
+
+  function frame(now) {
+    const p = Math.min((now - t0) / duration, 1);
+    currentAngle = startAng + total * ease(p);
+    drawWheel(currentAngle);
+    if (p < 1) requestAnimationFrame(frame);
+    else { spinning = false; document.getElementById("spinBtn").disabled = false; showResult(); }
+  }
+
+  requestAnimationFrame(frame);
+}
+
+// ── Result ────────────────────────────────────────────────────
+function showResult() {
+  const items = getWheelItems();
+  if (!items.length) return;
+  const slice = (2 * Math.PI) / items.length;
+  const norm  = ((-(currentAngle % (2 * Math.PI))) + 2 * Math.PI) % (2 * Math.PI);
+  const idx   = Math.floor(norm / slice) % items.length;
+  const r     = items[idx];
+
+  document.getElementById("resEmoji").textContent   = CAT_EMOJIS[r.category];
+  document.getElementById("resName").textContent    = r.name;
+  document.getElementById("resCuisine").textContent = r.category;
+  document.getElementById("resScore").textContent   = `⭐ ${r.score.toFixed(1)} (${r.volume.toLocaleString()})`;
+  document.getElementById("resEst").textContent  = `🕐 ${r.estimate} min`;
+  const distEl = document.getElementById("resDist");
+  if (r.dist_m != null) {
+    distEl.textContent = `📍 ${r.dist_m >= 1000 ? (r.dist_m/1000).toFixed(1)+'km' : r.dist_m+'m'} away`;
+    distEl.style.display = "";
+  } else { distEl.style.display = "none"; }
+  document.getElementById("resDesc").textContent    = r.desc || "No description available.";
+  document.getElementById("resLink").href           = r.wolt;
+
+  const res = document.getElementById("result");
+  res.classList.remove("show");
+  void res.offsetWidth;
+  res.classList.add("show");
+
+  // Highlight grid card
+  document.querySelectorAll(".rest-card").forEach(c => c.classList.remove("active"));
+  document.querySelectorAll(`.rest-card[data-slug="${CSS.escape(r.slug)}"]`)
+    .forEach(c => c.classList.add("active"));
+
+  // Scroll result into view on mobile
+  res.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+// ── Radius buttons ────────────────────────────────────────────
+function buildRadiusButtons() {
+  const row = document.getElementById("radiusRow");
+  row.innerHTML = `<span class="radius-label">📡 Radius:</span>`;
+  RADIUS_OPTIONS.forEach(opt => {
+    const btn = document.createElement("button");
+    btn.className   = "radius-btn" + (maxRadius === opt.value ? " on" : "");
+    btn.textContent = opt.label;
+    btn.addEventListener("click", () => {
+      maxRadius = opt.value;
+      row.querySelectorAll(".radius-btn").forEach(b => b.classList.remove("on"));
+      btn.classList.add("on");
+      manualExcluded = new Set();
+      buildGrid();
+      drawWheel(currentAngle);
+    });
+    row.appendChild(btn);
+  });
+}
+
+// ── Fast toggle ───────────────────────────────────────────────
+function toggleFast() {
+  fastOnly = !fastOnly;
+  const chip = document.getElementById("fastChip");
+  chip.classList.toggle("on", fastOnly);
+  buildGrid();
+  drawWheel(currentAngle);
+}
+
+// ── Category chips ────────────────────────────────────────────
+function buildChips() {
+  const row = document.getElementById("filterRow");
+  row.innerHTML = "";
+  CATEGORIES.forEach(cat => {
+    const chip = document.createElement("button");
+    chip.className = "chip" + (activeCategories.has(cat.key) ? " on" : "");
+    chip.textContent = cat.label;
+    chip.addEventListener("click", () => {
+      if (activeCategories.has(cat.key)) {
+        if (activeCategories.size <= 1) return;
+        activeCategories.delete(cat.key);
+        chip.classList.remove("on");
+      } else {
+        activeCategories.add(cat.key);
+        chip.classList.add("on");
+      }
+      buildGrid();
+      drawWheel(currentAngle);
+    });
+    row.appendChild(chip);
+  });
+}
+
+// ── Restaurant grid ───────────────────────────────────────────
+function buildGrid() {
+  const grid = document.getElementById("restGrid");
+  grid.innerHTML = "";
+
+  const filtered  = ALL_RESTAURANTS.filter(r => activeCategories.has(r.category));
+  const openCount = filtered.filter(r => r.online && (!fastOnly || isFast(r)) && inRadius(r)).length;
+  const fastNote  = fastOnly ? " · ⚡" : "";
+  const radNote   = maxRadius < Infinity ? ` · 📍≤${maxRadius >= 1000 ? maxRadius/1000+'km' : maxRadius+'m'}` : "";
+  document.getElementById("listCount").textContent =
+    `${openCount} open${fastNote}${radNote} · ${filtered.length} total`;
+
+  ALL_RESTAURANTS.forEach((r, i) => {
+    if (!activeCategories.has(r.category)) return;
+    if (fastOnly && r.online && !isFast(r)) return;
+    if (!inRadius(r) && r.online) return; // hide out-of-radius open restaurants
+
+    const card = document.createElement("div");
+    card.className  = "rest-card " + (r.online ? "open-card" : "closed-card");
+    card.dataset.slug = r.slug;
+    card.dataset.idx  = i;
+
+    if (r.online && manualExcluded.has(i)) {
+      card.classList.add("excluded");
+    }
+
+    const stars = "⭐".repeat(Math.min(3, Math.floor((r.score - 7.8) / 0.4)));
+
+    card.innerHTML = `
+      <span class="card-emoji">${CAT_EMOJIS[r.category]}</span>
+      <div class="card-info">
+        <div class="card-name">${r.name}</div>
+        <div class="card-meta">
+          ${r.online
+            ? `<span class="dot-open">● Open</span>`
+            : `<span class="dot-closed">● Closed</span>`}
+          <span class="score-badge">${r.score.toFixed(1)}★</span>
+          ${r.estimate ? `<span class="est-badge">${r.estimate}min</span>` : ""}
+          ${r.dist_m != null ? `<span class="est-badge">${r.dist_m >= 1000 ? (r.dist_m/1000).toFixed(1)+'km' : r.dist_m+'m'}</span>` : ""}
+        </div>
+      </div>`;
+
+    if (r.online) {
+      card.addEventListener("click", () => {
+        const ii = parseInt(card.dataset.idx);
+        if (manualExcluded.has(ii)) {
+          manualExcluded.delete(ii);
+          card.classList.remove("excluded");
+        } else {
+          manualExcluded.add(ii);
+          card.classList.add("excluded");
+        }
+        drawWheel(currentAngle);
+      });
+    }
+
+    grid.appendChild(card);
+  });
+}
+
+// ── Clock ─────────────────────────────────────────────────────
+function tickClock() {
+  document.getElementById("clockPill").textContent = "🕐 " + fmtIsraelTime();
+}
+
+// ── Mobile swipe ──────────────────────────────────────────────
+let _ts = null;
+canvas.addEventListener("touchstart", e => { _ts = e.touches[0].clientY; });
+canvas.addEventListener("touchend",   e => {
+  if (_ts !== null && Math.abs(_ts - e.changedTouches[0].clientY) > 30) spin();
+  _ts = null;
+});
+canvas.addEventListener("click", spin);
+
+// ── Boot ──────────────────────────────────────────────────────
+tickClock();
+setInterval(tickClock, 30_000);
+loadData();
+</script>
+</body>
+</html>
