@@ -68,11 +68,14 @@ def fetch_restaurants():
         resp = requests.get(url, headers=HEADERS, timeout=10)
         resp.raise_for_status()
     except Exception:
-        # Wolt unreachable (geo-block, network issue) → use cache
+        # Wolt unreachable (geo-block, network issue) → use cache, skip online filter
         if _restaurants_cache:
             return _restaurants_cache
         cached = _load_cache_file()
         if cached:
+            # Mark as always-online since cached online status is stale
+            for r in cached:
+                r["online"] = True
             return cached
         raise RuntimeError("Wolt API unavailable and no local cache found.")
 
