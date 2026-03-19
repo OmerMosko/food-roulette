@@ -308,6 +308,11 @@
     .rank-arrow:hover{border-color:var(--accent);color:var(--accent)}
     .drag-handle{font-size:1rem;color:var(--border);padding:0 4px;flex-shrink:0;cursor:grab}
 
+    @keyframes bounce-wait{
+      0%,100%{transform:translateY(0) rotate(-5deg)}
+      50%    {transform:translateY(-16px) rotate(5deg)}
+    }
+
     /* ── Superlike ── */
     .action-super{border-color:var(--accent2);color:var(--accent2)}
     .action-super:hover{background:rgba(255,184,48,.15)}
@@ -638,13 +643,19 @@
   </div>
 
   <!-- waiting state (shown after all swiped) -->
-  <div class="waiting-others" id="waitingOthers" style="display:none">
-    <div class="big">☕</div>
-    <div>You're done! Waiting for others…</div>
-    <div class="progress-bar-wrap" style="margin-top:14px">
-      <div class="progress-bar-fill" id="waitProgressBar" style="width:0%"></div>
+  <div id="waitingOthers" style="display:none;width:100%;text-align:center;padding:32px 16px 0;flex-direction:column;align-items:center;gap:16px">
+    <div style="font-size:5rem;animation:bounce-wait 1.4s ease-in-out infinite">☕</div>
+    <div style="font-size:1.4rem;font-weight:800;color:var(--text)">You're done!</div>
+    <div style="font-size:0.9rem;color:var(--muted)">Waiting for the others to finish…</div>
+
+    <div style="width:100%;max-width:340px;margin-top:8px">
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" id="waitProgressBar" style="width:0%;transition:width 0.5s ease"></div>
+      </div>
+      <div id="waitProgressLabel" style="margin-top:8px;font-size:0.85rem;color:var(--muted)"></div>
     </div>
-    <div id="waitProgressLabel" style="margin-top:6px;font-size:0.75rem;color:var(--muted)"></div>
+
+    <div id="waitPlayerStatus" style="width:100%;max-width:340px;display:flex;flex-direction:column;gap:8px;margin-top:4px"></div>
   </div>
 </div>
 
@@ -1529,7 +1540,14 @@ function startSwipe() {
   hasSuperliked = false;
   superlikedSlugs = new Set();
   updateSuperlikeBtn();
-  document.getElementById("waitingOthers").style.display = "none";
+
+  // Reset swipe UI visibility
+  document.getElementById("waitingOthers").style.display   = "none";
+  document.getElementById("progressDots").style.display    = "";
+  document.querySelector(".swipe-header").style.display    = "";
+  document.querySelector(".swipe-hint").style.display      = "";
+  document.querySelector(".action-row").style.display      = "";
+  document.getElementById("superlikeHint").style.display   = "";
   document.querySelectorAll(".action-btn").forEach(b => b.style.display = "flex");
 
   if (isTiebreaker) {
@@ -1739,10 +1757,17 @@ function nextCard() {
   updateDots();
 
   if (cardIdx >= restaurants.length) {
-    // All done
-    document.getElementById("cardStack").innerHTML = "";
+    // All done — hide all swipe UI, show waiting screen
+    document.getElementById("cardStack").innerHTML      = "";
+    document.getElementById("progressDots").style.display = "none";
+    document.querySelector(".swipe-header").style.display = "none";
+    document.querySelector(".swipe-hint").style.display   = "none";
+    document.querySelector(".action-row").style.display   = "none";
+    document.getElementById("superlikeHint").style.display = "none";
     document.querySelectorAll(".action-btn").forEach(b => b.style.display = "none");
-    document.getElementById("waitingOthers").style.display = "block";
+
+    const w = document.getElementById("waitingOthers");
+    w.style.display = "flex";
     return;
   }
   renderCards();
@@ -1753,8 +1778,20 @@ function updateWaitProgress(progress, total) {
   const count = Object.keys(progress).length;
   const pct   = count > 0 ? Math.round((done / count) * 100) : 0;
   document.getElementById("waitProgressBar").style.width = pct + "%";
-  document.getElementById("waitProgressLabel").textContent =
-    `${done}/${count} players finished`;
+  document.getElementById("waitProgressLabel").textContent = `${done} of ${count} players finished`;
+
+  // Per-player status
+  const statusEl = document.getElementById("waitPlayerStatus");
+  if (statusEl) {
+    statusEl.innerHTML = Object.entries(progress).map(([name, voted]) => {
+      const fin  = voted >= total;
+      return `<div style="display:flex;align-items:center;gap:10px;background:#12121a;border-radius:10px;padding:9px 14px">
+        <span style="font-size:1.1rem">${fin ? "✅" : "⏳"}</span>
+        <span style="font-size:0.88rem;font-weight:600;flex:1">${name}</span>
+        <span style="font-size:0.75rem;color:${fin ? "var(--green)" : "var(--muted)"}">${fin ? "Done!" : `${voted}/${total}`}</span>
+      </div>`;
+    }).join("");
+  }
 }
 
 // ═══════════════════════════════════════
