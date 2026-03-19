@@ -114,6 +114,14 @@ def index():
 def solo():
     return send_from_directory(".", "index.html")
 
+@app.route("/api/restaurants")
+def api_restaurants():
+    try:
+        return jsonify({"ok": True, "restaurants": fetch_restaurants()})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
 @app.route("/api/pool-count")
 def api_pool_count():
     try:
