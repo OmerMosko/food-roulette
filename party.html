@@ -324,6 +324,104 @@
       font-size:0.75rem;color:var(--accent2);font-weight:700;margin-left:4px;
     }
 
+    /* ══ Landing Page ══ */
+    #pg-home{position:relative;overflow:hidden;min-height:90vh;justify-content:center}
+
+    .hero-bg{
+      position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:0;
+    }
+    .food-float{
+      position:absolute;font-size:2.2rem;opacity:0.13;
+      animation:floatUp linear infinite;
+      filter:blur(0.5px);
+    }
+    @keyframes floatUp{
+      0%  {transform:translateY(110vh) rotate(0deg);opacity:0}
+      10% {opacity:0.13}
+      90% {opacity:0.13}
+      100%{transform:translateY(-20vh) rotate(360deg);opacity:0}
+    }
+
+    .hero-glow{
+      position:absolute;width:480px;height:480px;border-radius:50%;
+      background:radial-gradient(circle, rgba(255,107,53,.18) 0%, transparent 70%);
+      top:50%;left:50%;transform:translate(-50%,-60%);
+      animation:pulse-glow 4s ease-in-out infinite;
+      pointer-events:none;
+    }
+    @keyframes pulse-glow{
+      0%,100%{transform:translate(-50%,-60%) scale(1);opacity:1}
+      50%    {transform:translate(-50%,-60%) scale(1.15);opacity:.7}
+    }
+
+    .hero-wrap{
+      position:relative;z-index:1;
+      display:flex;flex-direction:column;align-items:center;
+      gap:0;text-align:center;padding-top:32px;width:100%;
+    }
+
+    .hero-emoji{
+      font-size:5rem;margin-bottom:4px;
+      animation:spin-slow 8s linear infinite;
+      display:inline-block;
+    }
+    @keyframes spin-slow{
+      0%  {transform:rotate(0deg)  scale(1)}
+      50% {transform:rotate(180deg) scale(1.1)}
+      100%{transform:rotate(360deg) scale(1)}
+    }
+
+    .hero-title{
+      font-size:2.6rem;font-weight:900;line-height:1.05;
+      background:linear-gradient(135deg,#fff 0%,var(--accent2) 40%,var(--accent) 100%);
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+      letter-spacing:-1px;margin-bottom:14px;
+    }
+
+    .hero-sub{
+      font-size:1rem;color:var(--muted);line-height:1.5;margin-bottom:28px;max-width:300px;
+    }
+    .hero-sub strong{color:var(--text)}
+
+    .features{
+      display:flex;gap:10px;margin-bottom:32px;flex-wrap:wrap;justify-content:center;
+    }
+    .feat{
+      background:rgba(255,255,255,.04);border:1px solid var(--border);
+      border-radius:14px;padding:10px 14px;font-size:0.78rem;
+      display:flex;flex-direction:column;align-items:center;gap:4px;min-width:80px;
+    }
+    .feat .fi{font-size:1.4rem}
+    .feat .ft{color:var(--muted);font-weight:600}
+
+    .btn-hero{
+      position:relative;width:100%;max-width:340px;
+      padding:20px;font-size:1.15rem;font-weight:800;
+      border:none;border-radius:50px;cursor:pointer;
+      background:linear-gradient(135deg,var(--accent),var(--accent2));
+      color:#fff;letter-spacing:0.3px;
+      box-shadow:0 0 0 0 rgba(255,107,53,.5);
+      animation:hero-pulse 2.5s ease-in-out infinite;
+      transition:transform 0.2s;
+      margin-bottom:14px;
+    }
+    .btn-hero:hover{transform:scale(1.04)}
+    @keyframes hero-pulse{
+      0%,100%{box-shadow:0 0 0 0 rgba(255,107,53,.5), 0 8px 32px rgba(255,107,53,.35)}
+      50%    {box-shadow:0 0 0 16px rgba(255,107,53,.0), 0 8px 40px rgba(255,107,53,.5)}
+    }
+    .btn-hero-icon{font-size:1.3rem;margin-right:6px;vertical-align:middle}
+
+    .btn-join-hero{
+      width:100%;max-width:340px;
+      padding:16px;font-size:1rem;font-weight:700;
+      border:1.5px solid var(--border);border-radius:50px;
+      background:rgba(255,255,255,.03);color:var(--muted);
+      cursor:pointer;transition:all 0.2s;
+      backdrop-filter:blur(4px);
+    }
+    .btn-join-hero:hover{border-color:var(--blue);color:var(--blue);background:rgba(76,201,240,.06)}
+
     /* spinner */
     .spinner{
       width:36px;height:36px;border:3px solid var(--border);
@@ -341,15 +439,35 @@
 </nav>
 
 <!-- ═══ PAGE: HOME ═══ -->
+<!-- Floating food background (shared across all pages while on home) -->
+<div class="hero-bg" id="heroBg"></div>
+
 <div class="page active" id="pg-home">
-  <div class="panel" style="text-align:center;padding:32px 24px">
-    <div style="font-size:3rem;margin-bottom:12px">🎲</div>
-    <h2 style="margin-bottom:8px">Multiplayer Food Roulette</h2>
-    <p>Pick restaurants together — Tinder style.<br>
-       70%+ agreement wins the vote.</p>
+  <div class="hero-glow"></div>
+
+  <div class="hero-wrap">
+    <span class="hero-emoji">🎲</span>
+
+    <h1 class="hero-title">Food Roulette</h1>
+    <p class="hero-sub">
+      Can't decide where to eat?<br>
+      <strong>Swipe together. The group decides.</strong>
+    </p>
+
+    <div class="features">
+      <div class="feat"><span class="fi">👆</span><span class="ft">Swipe</span></div>
+      <div class="feat"><span class="fi">🗳️</span><span class="ft">70% wins</span></div>
+      <div class="feat"><span class="fi">⭐</span><span class="ft">Superlike</span></div>
+      <div class="feat"><span class="fi">🔥</span><span class="ft">Tiebreaker</span></div>
+    </div>
+
+    <button class="btn-hero" onclick="showPage('pg-create')">
+      <span class="btn-hero-icon">🎮</span> Create a Game
+    </button>
+    <button class="btn-join-hero" onclick="showPage('pg-join')">
+      🔗 Join with a code
+    </button>
   </div>
-  <button class="btn btn-primary" onclick="showPage('pg-create')">🎮 Create a Game</button>
-  <button class="btn btn-secondary" onclick="showPage('pg-join')">🔗 Join with Code</button>
 </div>
 
 <!-- ═══ PAGE: CREATE ═══ -->
@@ -741,6 +859,47 @@ const sounds = (() => {
 
 // Unlock audio on first user gesture (iOS / autoplay policy)
 document.addEventListener("pointerdown", () => sounds.tick && sounds, { once: true });
+
+// ── Floating food emoji background ──────────────────────────
+(function spawnFloaters() {
+  const bg     = document.getElementById("heroBg");
+  const emojis = ["🍔","🍕","🌮","🍗","🍟","🥗","🍜","🌯","🧆","🥙"];
+  let   active = true;
+
+  function spawn() {
+    if (!active) return;
+    const el  = document.createElement("span");
+    el.className   = "food-float";
+    el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+    const size  = 1.2 + Math.random() * 1.8;
+    const dur   = 9 + Math.random() * 12;
+    const delay = Math.random() * 6;
+    el.style.cssText = `
+      left:${Math.random() * 100}%;
+      font-size:${size}rem;
+      animation-duration:${dur}s;
+      animation-delay:${delay}s;
+    `;
+    bg.appendChild(el);
+    setTimeout(() => el.remove(), (dur + delay) * 1000);
+    setTimeout(spawn, 600 + Math.random() * 1200);
+  }
+
+  // Show bg only on home page
+  function syncBg(pageId) {
+    active = pageId === "pg-home";
+    bg.style.display = active ? "block" : "none";
+  }
+
+  // Hook into showPage
+  const _origShow = window.showPage;
+  window.showPage = function(id) {
+    _origShow(id);
+    syncBg(id);
+  };
+
+  spawn(); spawn(); spawn(); // seed a few upfront
+})();
 
 // ═══════════════════════════════════════
 // State
