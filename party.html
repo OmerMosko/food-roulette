@@ -499,6 +499,18 @@
     <label>Your name</label>
     <input type="text" id="hostName" placeholder="e.g. Mosko" maxlength="20"/>
 
+    <label>Location</label>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:16px">
+      <input type="text" id="locationInput" placeholder="Detecting…"
+             style="flex:1;margin-bottom:0"
+             oninput="onLocationInput()"/>
+      <button type="button" id="gpsBtn" onclick="useGPS()"
+              title="Use my GPS location"
+              style="flex-shrink:0;padding:10px 14px;background:#1a1a24;border:1px solid var(--border);
+                     border-radius:10px;cursor:pointer;font-size:1.1rem;color:var(--text)">📍</button>
+    </div>
+    <div id="locationHint" style="font-size:0.75rem;color:var(--muted);margin:-12px 0 14px;min-height:16px"></div>
+
     <label>Max players (room capacity)</label>
     <div class="stepper">
       <button onclick="changeCount(-1)">−</button>
@@ -963,10 +975,16 @@ let activeCats   = new Set(["burgers","pizza","mexican","fried chicken"]);
 let maxRadius    = 0;
 let minScore     = 8.0;
 
-// Location — default to central Tel Aviv, updated when browser resolves
+// ── Location ─────────────────────────────────────────────────────
 const TLV_LAT = 32.0853, TLV_LON = 34.7818;
 let userLat = TLV_LAT, userLon = TLV_LON;
 let locationReady = false;
+let _geoTimer = null;
+
+function setLocationHint(msg, color = "var(--muted)") {
+  const el = document.getElementById("locationHint");
+  if (el) el.style.color = color, el.textContent = msg;
+}
 
 function resolveLocation() {
   return new Promise(resolve => {
@@ -976,13 +994,88 @@ function resolveLocation() {
         userLat = pos.coords.latitude;
         userLon = pos.coords.longitude;
         locationReady = true;
+        const inp = document.getElementById("locationInput");
+        if (inp && !inp.dataset.manualOverride) {
+          inp.value = `${userLat.toFixed(4)}, ${userLon.toFixed(4)}`;
+          inp.placeholder = "Type a place or use 📍";
+          reverseGeocode(userLat, userLon);
+        }
         resolve();
       },
-      () => resolve(), // denied or error → keep TLV default
+      () => {
+        const inp = document.getElementById("locationInput");
+        if (inp && !inp.dataset.manualOverride) {
+          inp.value = "";
+          inp.placeholder = "e.g. Florentin, Tel Aviv";
+        }
+        setLocationHint("Location not available — using Tel Aviv center");
+        resolve();
+      },
       { timeout: 5000, maximumAge: 60000 }
     );
   });
 }
+
+async function reverseGeocode(lat, lon) {
+  try {
+    const r = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`,
+      { headers: { "Accept-Language": "en" } }
+    );
+    const d = await r.json();
+    const name = d.address?.suburb || d.address?.neighbourhood ||
+                 d.address?.city_district || d.address?.city || "Your location";
+    const inp = document.getElementById("locationInput");
+    if (inp && !inp.dataset.manualOverride) {
+      inp.value = name;
+      setLocationHint(`📍 GPS: ${name}`, "var(--green)");
+      fetchPoolCount();
+    }
+  } catch (_) {}
+}
+
+let _geocodeTimer = null;
+function onLocationInput() {
+  const inp = document.getElementById("locationInput");
+  inp.dataset.manualOverride = "1";
+  setLocationHint("", "var(--muted)");
+  clearTimeout(_geocodeTimer);
+  const q = inp.value.trim();
+  if (!q) { userLat = TLV_LAT; userLon = TLV_LON; fetchPoolCount(); return; }
+  _geocodeTimer = setTimeout(() => geocodeText(q), 700);
+}
+
+async function geocodeText(query) {
+  setLocationHint("Searching…", "var(--muted)");
+  try {
+    const r = await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1&countrycodes=il`,
+      { headers: { "Accept-Language": "en" } }
+    );
+    const results = await r.json();
+    if (!results.length) {
+      setLocationHint("Place not found — using Tel Aviv center", "var(--red)");
+      userLat = TLV_LAT; userLon = TLV_LON;
+    } else {
+      userLat = parseFloat(results[0].lat);
+      userLon = parseFloat(results[0].lon);
+      setLocationHint(`✓ ${results[0].display_name.split(",").slice(0,2).join(",")}`, "var(--green)");
+    }
+    fetchPoolCount();
+  } catch (_) {
+    setLocationHint("Geocode failed — using Tel Aviv center", "var(--red)");
+    userLat = TLV_LAT; userLon = TLV_LON;
+  }
+}
+
+function useGPS() {
+  const inp = document.getElementById("locationInput");
+  if (inp) { inp.value = ""; delete inp.dataset.manualOverride; }
+  setLocationHint("Getting GPS…", "var(--muted)");
+  locationReady = false;
+  resolveLocation();
+}
+
 // Fire immediately so it's ready by the time user hits Create
 resolveLocation();
 
@@ -1189,7 +1282,13 @@ async function createGame() {
   const name = document.getElementById("hostName").value.trim() || "Host";
   myName = name;
   document.getElementById("createBtn").disabled = true;
-  if (!locationReady) await resolveLocation();
+  // If user typed a location manually and geocode hasn't resolved yet, wait for it
+  const locInp = document.getElementById("locationInput");
+  if (locInp?.dataset.manualOverride && locInp.value.trim()) {
+    await geocodeText(locInp.value.trim());
+  } else if (!locationReady) {
+    await resolveLocation();
+  }
   socket.emit("create_room", {
     host_name:    name,
     player_count: playerCount,
