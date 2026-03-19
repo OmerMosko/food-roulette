@@ -729,7 +729,7 @@ function buildGrid() {
       card.classList.add("excluded");
     }
 
-    const stars = "⭐".repeat(Math.min(3, Math.floor((r.score - 7.8) / 0.4)));
+    const stars = "⭐".repeat(Math.max(0, Math.min(3, Math.floor((r.score - 7.8) / 0.4))));
 
     card.innerHTML = `
       <span class="card-emoji">${CAT_EMOJIS[r.category]}</span>
