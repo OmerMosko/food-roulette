@@ -376,7 +376,7 @@
 
 <header>
   <h1>🎰 Food Roulette</h1>
-  <p>📍 HaShoftim 26, Tel Aviv · Live from Wolt</p>
+  <p>📍 <span id="headerLocation">Detecting location…</span> · Live from Wolt</p>
   <a href="/" style="display:inline-block;margin-top:8px;padding:6px 18px;background:rgba(76,201,240,.12);color:#4cc9f0;border:1.5px solid rgba(76,201,240,.3);border-radius:20px;font-size:0.8rem;font-weight:700;text-decoration:none">🎉 Multiplayer Party Mode →</a>
 </header>
 
@@ -441,7 +441,7 @@
   </div>
 </div>
 
-<footer>Live data from Wolt API · HaShoftim 26, Tel Aviv · Hit Refresh for latest status</footer>
+<footer>Live data from Wolt API · <span id="footerLocation">Tel Aviv</span> · Hit Refresh for latest status</footer>
 
 <script>
 const CATEGORIES = [
@@ -531,6 +531,7 @@ function resolveLocation() {
       },
       () => {
         setLocationHint("Location not available — using Tel Aviv center");
+        setPageLocation("Tel Aviv Center");
         const inp = document.getElementById("locationInput");
         if (inp && !inp.dataset.manualOverride) inp.placeholder = "e.g. Florentin, Tel Aviv";
         resolve();
@@ -538,6 +539,13 @@ function resolveLocation() {
       { timeout: 5000, maximumAge: 60000 }
     );
   });
+}
+
+function setPageLocation(name) {
+  const h = document.getElementById("headerLocation");
+  const f = document.getElementById("footerLocation");
+  if (h) h.textContent = name;
+  if (f) f.textContent = name;
 }
 
 async function reverseGeocode(lat, lon) {
@@ -554,6 +562,7 @@ async function reverseGeocode(lat, lon) {
       inp.value = name;
       setLocationHint(`📍 GPS: ${name}`, "#4caf50");
     }
+    setPageLocation(name);
   } catch (_) {}
 }
 
@@ -579,10 +588,13 @@ async function geocodeAndReload(query) {
     if (!results.length) {
       setLocationHint("Place not found — using Tel Aviv center", "#e53935");
       userLat = TLV_LAT; userLon = TLV_LON;
+      setPageLocation("Tel Aviv Center");
     } else {
       userLat = parseFloat(results[0].lat);
       userLon = parseFloat(results[0].lon);
-      setLocationHint(`✓ ${results[0].display_name.split(",").slice(0,2).join(",")}`, "#4caf50");
+      const label = results[0].display_name.split(",").slice(0,2).join(",").trim();
+      setLocationHint(`✓ ${label}`, "#4caf50");
+      setPageLocation(label);
     }
     loadData();
   } catch (_) {
