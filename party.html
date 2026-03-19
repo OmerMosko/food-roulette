@@ -538,6 +538,123 @@
       text-transform:uppercase;margin:4px 0;
     }
 
+    /* ══════════════════════════════════════
+       ONBOARDING
+    ══════════════════════════════════════ */
+    #pg-onboard{
+      justify-content:space-between;
+      padding-top:16px;padding-bottom:24px;
+      min-height:calc(100svh - 80px);
+      gap:0;
+    }
+    .ob-dots{display:flex;gap:8px;justify-content:center;margin-bottom:20px}
+    .ob-dot{
+      width:8px;height:8px;border-radius:50%;
+      background:var(--border);transition:all 0.3s;
+    }
+    .ob-dot.on{background:var(--accent);transform:scale(1.35)}
+
+    .ob-step{
+      display:none;flex-direction:column;align-items:center;
+      gap:14px;width:100%;flex:1;justify-content:center;
+      text-align:center;padding:0 4px;
+    }
+    .ob-step.active{display:flex}
+    .ob-step h2{font-size:1.5rem;font-weight:800;line-height:1.2}
+    .ob-step p{
+      font-size:0.92rem;color:var(--muted);line-height:1.65;max-width:290px;
+    }
+
+    /* ── Animated demo card ── */
+    .demo-card-scene{
+      position:relative;width:220px;height:190px;margin:4px auto 8px;
+      filter:drop-shadow(0 8px 24px rgba(0,0,0,.5));
+    }
+    .demo-card{
+      position:absolute;inset:0;
+      background:var(--card);border:1.5px solid var(--border);border-radius:20px;
+      display:flex;flex-direction:column;align-items:center;justify-content:center;
+      gap:6px;padding:20px;
+      animation:demoSwipe 4s ease-in-out infinite;
+    }
+    .demo-card-img{
+      font-size:3.2rem;line-height:1;
+    }
+    .demo-card-name{font-size:1rem;font-weight:800;color:var(--accent2)}
+    .demo-card-meta{font-size:0.75rem;color:var(--muted)}
+
+    .demo-badge{
+      position:absolute;top:14px;padding:4px 12px;
+      border-radius:7px;border:2.5px solid;
+      font-size:0.9rem;font-weight:900;letter-spacing:1.5px;opacity:0;
+    }
+    .demo-badge-like{right:12px;color:var(--green);border-color:var(--green);
+      animation:demoBadgeLike 4s ease-in-out infinite}
+    .demo-badge-nope{left:12px;color:var(--red);border-color:var(--red);
+      animation:demoBadgeNope 4s ease-in-out infinite}
+
+    @keyframes demoSwipe{
+      0%   {transform:translateX(0) rotate(0deg);  box-shadow:none}
+      18%  {transform:translateX(72px) rotate(8deg); box-shadow:0 0 24px rgba(0,212,170,.35)}
+      33%  {transform:translateX(72px) rotate(8deg)}
+      46%  {transform:translateX(0) rotate(0deg); box-shadow:none}
+      54%  {transform:translateX(0) rotate(0deg)}
+      72%  {transform:translateX(-72px) rotate(-8deg);box-shadow:0 0 24px rgba(255,77,109,.35)}
+      87%  {transform:translateX(-72px) rotate(-8deg)}
+      97%  {transform:translateX(0) rotate(0deg)}
+      100% {transform:translateX(0) rotate(0deg)}
+    }
+    @keyframes demoBadgeLike{
+      0%,15%{opacity:0} 20%,40%{opacity:1} 48%,100%{opacity:0}
+    }
+    @keyframes demoBadgeNope{
+      0%,52%{opacity:0} 58%,84%{opacity:1} 94%,100%{opacity:0}
+    }
+
+    /* ── Player avatars ── */
+    .demo-avatars{
+      display:flex;gap:10px;justify-content:center;
+      font-size:2.8rem;margin:8px 0;
+      animation:avatarsBob 2.2s ease-in-out infinite;
+    }
+    @keyframes avatarsBob{
+      0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)}
+    }
+    .demo-vote-row{
+      display:flex;gap:8px;align-items:center;justify-content:center;
+      font-size:1.1rem;
+    }
+    .demo-vote-badge{
+      background:rgba(255,255,255,.06);border:1px solid var(--border);
+      border-radius:8px;padding:4px 10px;font-size:0.75rem;font-weight:700;color:var(--muted);
+    }
+    .demo-vote-badge.hidden-vote{filter:blur(4px);user-select:none}
+
+    /* ── Winner reveal ── */
+    .demo-winner-card{
+      background:var(--card);border:1.5px solid var(--border);border-radius:20px;
+      padding:22px 28px;display:flex;flex-direction:column;align-items:center;gap:8px;
+      width:100%;max-width:280px;
+      animation:winnerPop 0.5s cubic-bezier(.34,1.56,.64,1) both,
+                winnerFloat 3s 0.5s ease-in-out infinite;
+    }
+    @keyframes winnerPop{from{opacity:0;transform:scale(0.6)}to{opacity:1;transform:scale(1)}}
+    @keyframes winnerFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+    .demo-winner-emoji{font-size:3.5rem;line-height:1}
+    .demo-winner-label{font-size:0.7rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted)}
+    .demo-winner-name{font-size:1.15rem;font-weight:800;color:var(--accent2)}
+    .demo-votes{display:flex;gap:4px;margin-top:4px}
+    .demo-vote-dot{
+      width:10px;height:10px;border-radius:50%;background:var(--green);
+      animation:voteDotPop 0.4s cubic-bezier(.34,1.56,.64,1) both;
+    }
+    .demo-vote-dot:nth-child(1){animation-delay:0.6s}
+    .demo-vote-dot:nth-child(2){animation-delay:0.75s}
+    .demo-vote-dot:nth-child(3){animation-delay:0.9s}
+
+    /* ── Onboard buttons ── */
+    .ob-btn-wrap{display:flex;flex-direction:column;align-items:center;gap:8px;width:100%;margin-top:16px}
+
     /* ── Small screen adjustments ── */
     @media(max-height:680px){
       .swipe-header .sub{display:none}
@@ -599,11 +716,76 @@
   <h1>🎉 Food Roulette</h1>
 </nav>
 
+<!-- ═══ PAGE: ONBOARDING ═══ -->
+<div class="page" id="pg-onboard">
+
+  <!-- step dots -->
+  <div class="ob-dots">
+    <div class="ob-dot on"  id="od-0"></div>
+    <div class="ob-dot"     id="od-1"></div>
+    <div class="ob-dot"     id="od-2"></div>
+  </div>
+
+  <!-- STEP 1: swipe demo -->
+  <div class="ob-step active" id="os-0">
+    <div class="demo-card-scene">
+      <div class="demo-card">
+        <div class="demo-badge demo-badge-like">LIKE ❤</div>
+        <div class="demo-badge demo-badge-nope">✕ NOPE</div>
+        <div class="demo-card-img">🍕</div>
+        <div class="demo-card-name">La Famiglia</div>
+        <div class="demo-card-meta">⭐ 8.4 · 🕐 25 min</div>
+      </div>
+    </div>
+    <h2>Swipe to vote</h2>
+    <p>
+      <strong style="color:var(--green)">Swipe RIGHT</strong> if you want to eat there<br>
+      <strong style="color:var(--red)">Swipe LEFT</strong> if it's not for you
+    </p>
+  </div>
+
+  <!-- STEP 2: multiplayer -->
+  <div class="ob-step" id="os-1">
+    <div class="demo-avatars">👩 👨 👧 👦</div>
+    <div class="demo-vote-row">
+      <div class="demo-vote-badge hidden-vote">👍</div>
+      <div class="demo-vote-badge hidden-vote">👎</div>
+      <div class="demo-vote-badge hidden-vote">👍</div>
+      <div class="demo-vote-badge hidden-vote">👍</div>
+    </div>
+    <h2>Everyone votes<br>at the same time</h2>
+    <p>Share a link — friends join on their phone, no app needed. Each person swipes in secret, so no one influences anyone else.</p>
+  </div>
+
+  <!-- STEP 3: winner -->
+  <div class="ob-step" id="os-2">
+    <div class="demo-winner-card">
+      <div class="demo-winner-emoji">🏆</div>
+      <div class="demo-winner-label">Tonight's winner</div>
+      <div class="demo-winner-name">The Burger Lab</div>
+      <div class="demo-votes">
+        <div class="demo-vote-dot"></div>
+        <div class="demo-vote-dot"></div>
+        <div class="demo-vote-dot"></div>
+      </div>
+    </div>
+    <h2>The group decides</h2>
+    <p>Most likes wins! If there's a tie, a quick ranking round settles it. No more "I don't know, whatever you want" 😅</p>
+  </div>
+
+  <!-- nav buttons -->
+  <div class="ob-btn-wrap">
+    <button class="btn btn-primary" id="obNextBtn" onclick="obNext()">Next →</button>
+    <button class="btn btn-secondary" onclick="obFinish()" style="padding:10px;font-size:0.85rem">Skip intro</button>
+  </div>
+
+</div>
+
 <!-- ═══ PAGE: HOME ═══ -->
 <!-- Floating food background (shared across all pages while on home) -->
 <div class="hero-bg" id="heroBg"></div>
 
-<div class="page active" id="pg-home">
+<div class="page" id="pg-home">
   <div class="hero-glow"></div>
 
   <div class="hero-wrap">
@@ -1541,7 +1723,44 @@ const urlParams = new URLSearchParams(location.search);
 if (urlParams.get("join")) {
   document.getElementById("joinCode").value = urlParams.get("join").toUpperCase();
   showPage("pg-join");
+} else {
+  // Show onboarding on first visit, otherwise go straight to home
+  initOnboarding();
 }
+
+// ── Onboarding ───────────────────────────────────────────
+const ONBOARD_KEY = 'fr_onboard_v1';
+let obStep = 0;
+
+function initOnboarding() {
+  if (localStorage.getItem(ONBOARD_KEY)) {
+    showPage('pg-home'); // returning user — skip straight to home
+    return;
+  }
+  showPage('pg-onboard'); // first visit
+}
+
+function obGo(step) {
+  document.querySelectorAll('.ob-step').forEach((s, i) => {
+    s.classList.toggle('active', i === step);
+  });
+  document.querySelectorAll('.ob-dot').forEach((d, i) => {
+    d.classList.toggle('on', i === step);
+  });
+  obStep = step;
+  const btn = document.getElementById('obNextBtn');
+  if (btn) btn.textContent = step === 2 ? "Let's eat! 🍽️" : 'Next →';
+}
+
+function obNext() {
+  if (obStep < 2) { obGo(obStep + 1); } else { obFinish(); }
+}
+
+function obFinish() {
+  localStorage.setItem(ONBOARD_KEY, '1');
+  showPage('pg-home');
+}
+// ─────────────────────────────────────────────────────────
 
 // ═══════════════════════════════════════
 // Lobby
