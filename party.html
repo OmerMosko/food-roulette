@@ -31,8 +31,12 @@
     body{
       background:var(--bg);color:var(--text);
       font-family:'Segoe UI',system-ui,sans-serif;
-      min-height:100vh;display:flex;flex-direction:column;
-      align-items:center;padding:0 16px 40px;
+      min-height:100svh;display:flex;flex-direction:column;
+      align-items:center;padding:0 16px 32px;
+    }
+    /* Lock scroll on swipe page so nothing overflows */
+    body.swipe-mode{
+      height:100svh;overflow:hidden;padding-bottom:0;
     }
     a{color:var(--accent);text-decoration:none}
 
@@ -198,17 +202,23 @@
     /* ═══════════════════════════════════
        SWIPE SCREEN
     ═══════════════════════════════════ */
-    #pg-swipe{position:relative}
+    #pg-swipe{
+      position:relative;
+      flex:1;min-height:0;
+      gap:6px;
+      padding-bottom:max(8px, env(safe-area-inset-bottom));
+    }
 
     .swipe-header{
-      text-align:center;width:100%;margin-bottom:8px;
+      text-align:center;width:100%;margin-bottom:4px;
     }
     .swipe-header .sub{font-size:0.8rem;color:var(--muted);margin-top:4px}
 
     /* Card stack */
     .card-stack{
       position:relative;width:100%;max-width:360px;
-      height:490px;margin:0 auto;
+      flex:1;min-height:260px;max-height:500px;
+      margin:0 auto;
     }
 
     .swipe-card{
@@ -238,12 +248,12 @@
 
     .card-img{
       width:calc(100% + 48px);margin:-24px -24px 16px;
-      height:190px;object-fit:cover;border-radius:22px 22px 0 0;
+      height:clamp(120px, 22svh, 190px);object-fit:cover;border-radius:22px 22px 0 0;
       background:var(--border);display:block;flex-shrink:0;
     }
     .card-img-placeholder{
       width:calc(100% + 48px);margin:-24px -24px 16px;
-      height:190px;border-radius:22px 22px 0 0;flex-shrink:0;
+      height:clamp(120px, 22svh, 190px);border-radius:22px 22px 0 0;flex-shrink:0;
       background:linear-gradient(135deg,#1e1e2c,#2a2a3a);
       display:flex;align-items:center;justify-content:center;
       font-size:4rem;
@@ -264,7 +274,7 @@
     /* Swipe hint arrows */
     .swipe-hint{
       display:flex;justify-content:space-between;align-items:center;
-      width:100%;max-width:360px;margin:12px auto 0;
+      width:100%;max-width:360px;margin:4px auto 0;
       font-size:0.78rem;color:var(--muted);
     }
     .hint-nope{color:var(--red);font-weight:700}
@@ -272,11 +282,11 @@
 
     /* Action buttons (alt to swipe) */
     .action-row{
-      display:flex;gap:16px;justify-content:center;width:100%;max-width:360px;margin-top:12px;
+      display:flex;gap:16px;justify-content:center;width:100%;max-width:360px;margin-top:6px;
     }
     .action-btn{
-      width:60px;height:60px;border-radius:50%;border:2px solid;
-      background:transparent;cursor:pointer;font-size:1.4rem;
+      width:56px;height:56px;border-radius:50%;border:2px solid;
+      background:transparent;cursor:pointer;font-size:1.3rem;
       display:flex;align-items:center;justify-content:center;
       transition:transform 0.15s,background 0.15s;
     }
@@ -526,6 +536,15 @@
     .divider-text{
       font-size:0.7rem;color:var(--border);font-weight:600;letter-spacing:2px;
       text-transform:uppercase;margin:4px 0;
+    }
+
+    /* ── Small screen adjustments ── */
+    @media(max-height:680px){
+      .swipe-header .sub{display:none}
+      #superlikeHint{display:none!important}
+      .swipe-hint{display:none}
+      .action-btn{width:50px;height:50px;font-size:1.2rem}
+      .progress-dots{margin:0}
     }
 
     /* ── Tutorial trainer ── */
@@ -1274,6 +1293,8 @@ let superlikedSlugs = new Set(); // slugs that have been superlikes by anyone
 function showPage(id) {
   document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
   document.getElementById(id).classList.add("active");
+  // Lock body scroll on swipe page so everything fits in viewport
+  document.body.classList.toggle("swipe-mode", id === "pg-swipe");
   if (id === "pg-create") fetchPoolCount();
 }
 
