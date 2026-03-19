@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Food Roulette — Flask + SocketIO backend."""
 
+import json
 import math
 import os
 import random
@@ -51,10 +52,30 @@ def gen_code():
             return code
 
 
+_restaurants_cache = None   # in-memory after first successful fetch
+
+def _load_cache_file():
+    cache_path = os.path.join(os.path.dirname(__file__), "restaurants_cache.json")
+    if os.path.exists(cache_path):
+        with open(cache_path) as f:
+            return json.load(f)
+    return []
+
 def fetch_restaurants():
+    global _restaurants_cache
     url = f"https://restaurant-api.wolt.com/v1/pages/restaurants?lat={LAT}&lon={LON}"
-    resp = requests.get(url, headers=HEADERS, timeout=15)
-    resp.raise_for_status()
+    try:
+        resp = requests.get(url, headers=HEADERS, timeout=10)
+        resp.raise_for_status()
+    except Exception:
+        # Wolt unreachable (geo-block, network issue) → use cache
+        if _restaurants_cache:
+            return _restaurants_cache
+        cached = _load_cache_file()
+        if cached:
+            return cached
+        raise RuntimeError("Wolt API unavailable and no local cache found.")
+
     data = resp.json()
 
     section = next(
@@ -117,6 +138,7 @@ def fetch_restaurants():
         })
 
     results.sort(key=lambda x: (-x["score"], -x["volume"]))
+    _restaurants_cache = results
     return results
 
 
