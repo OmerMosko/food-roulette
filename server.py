@@ -261,12 +261,8 @@ def on_join_game(data):
     socketio.emit("player_joined", {
         "players":      player_names,
         "player_count": room["player_count"],
+        "can_start":    len(room["players"]) >= 2,
     }, room=code)
-
-    # Auto-start when full
-    if len(room["players"]) >= room["player_count"]:
-        room["status"] = "voting"
-        socketio.emit("game_started", {"restaurants": room["restaurants"]}, room=code)
 
 
 @socketio.on("cast_vote")
@@ -485,6 +481,24 @@ def _finish_game(code):
             winner = entry
 
     socketio.emit("game_result", {"winner": winner, "results": results, "mode": "vote"}, room=code)
+
+
+@socketio.on("start_game")
+def on_start_game(data):
+    code = (data.get("code") or "").upper()
+    if code not in rooms:
+        return
+    room = rooms[code]
+    if room.get("host_sid") != request.sid:
+        emit("game_error", {"msg": "Only the host can start the game."})
+        return
+    if room["status"] != "waiting":
+        return
+    if len(room["players"]) < 2:
+        emit("game_error", {"msg": "Need at least 2 players to start."})
+        return
+    room["status"] = "voting"
+    socketio.emit("game_started", {"restaurants": room["restaurants"]}, room=code)
 
 
 @socketio.on("repull_restaurants")

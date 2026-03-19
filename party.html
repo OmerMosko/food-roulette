@@ -478,7 +478,7 @@
     <label>Your name</label>
     <input type="text" id="hostName" placeholder="e.g. Mosko" maxlength="20"/>
 
-    <label>Number of players</label>
+    <label>Max players (room capacity)</label>
     <div class="stepper">
       <button onclick="changeCount(-1)">−</button>
       <span class="count" id="playerCountDisplay">4</span>
@@ -562,8 +562,21 @@
   <div class="panel">
     <h2>Players <span id="lobbyCountLabel" style="color:var(--muted);font-weight:400"></span></h2>
     <div class="player-list" id="lobbyPlayerList"></div>
-    <div style="margin-top:14px;font-size:0.8rem;color:var(--muted);text-align:center">
-      ⏳ Waiting for all players to join…
+
+    <!-- Host: start button -->
+    <div id="hostStartWrap" style="display:none;margin-top:16px">
+      <button class="btn btn-primary" id="startGameBtn" onclick="startGame()" disabled
+        style="opacity:.4">
+        🚀 Start Game
+      </button>
+      <div style="margin-top:8px;font-size:0.75rem;color:var(--muted);text-align:center" id="startHint">
+        Waiting for at least 1 more player…
+      </div>
+    </div>
+
+    <!-- Guest: waiting message -->
+    <div id="guestWaitWrap" style="display:none;margin-top:14px;font-size:0.85rem;color:var(--muted);text-align:center">
+      ⏳ Waiting for the host to start…
     </div>
   </div>
 
@@ -978,11 +991,7 @@ function initSocket() {
 
   socket.on("player_joined", d => {
     updateLobbyPlayers(d.players, d.player_count);
-    if (d.players.length >= d.player_count) {
-      sounds.gameStart();
-    } else {
-      sounds.playerJoined();
-    }
+    sounds.playerJoined();
   });
 
   socket.on("player_left", d => {
@@ -1164,9 +1173,12 @@ function renderLobby(players, total, rests, poolCount) {
 
   updateLobbyPlayers(players, total);
 
-  // Show repull button for host only
+  // Show repull button and start controls for host only
   const repullBtn = document.getElementById("repullBtn");
   if (repullBtn) repullBtn.style.display = isHost ? "block" : "none";
+
+  document.getElementById("hostStartWrap").style.display = isHost ? "block" : "none";
+  document.getElementById("guestWaitWrap").style.display = isHost ? "none"  : "block";
 
   // Pool count label
   const poolLabel = document.getElementById("poolCountLabel");
@@ -1215,6 +1227,13 @@ function showSuperlikeToast() {
   toast.textContent = "⭐ Someone used their Superlike!";
   document.body.appendChild(toast);
   setTimeout(() => toast.remove(), 2500);
+}
+
+function startGame() {
+  const btn = document.getElementById("startGameBtn");
+  if (btn) { btn.disabled = true; btn.innerHTML = "⏳ Starting…"; }
+  sounds.gameStart();
+  socket.emit("start_game", { code: roomCode });
 }
 
 function repullRestaurants() {
@@ -1289,6 +1308,17 @@ function updateLobbyPlayers(players, total) {
     list.appendChild(div);
   }
   document.getElementById("lobbyCountLabel").textContent = `(${players.length}/${max})`;
+
+  // Update start button state (host only)
+  if (isHost) {
+    const canStart = players.length >= 2;
+    const btn  = document.getElementById("startGameBtn");
+    const hint = document.getElementById("startHint");
+    if (btn)  { btn.disabled = !canStart; btn.style.opacity = canStart ? "1" : ".4"; }
+    if (hint) hint.textContent = canStart
+      ? `${players.length} players ready — start when you're ready!`
+      : "Waiting for at least 1 more player…";
+  }
 }
 
 // ═══════════════════════════════════════
