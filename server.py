@@ -167,6 +167,7 @@ def api_pool_count():
 
 
 @app.route("/")
+@app.route("/party")
 def index():
     return send_from_directory(".", "party.html")
 

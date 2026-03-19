@@ -1159,7 +1159,7 @@ if (urlParams.get("join")) {
 function renderLobby(players, total, rests, poolCount) {
   document.getElementById("lobbyCode").textContent = roomCode;
   document.getElementById("lobbyCountLabel").textContent = `(${players.length}/${total})`;
-  const link = `${location.origin}/party?join=${roomCode}`;
+  const link = `${location.origin}/?join=${roomCode}`;
   document.getElementById("lobbyLink").textContent = link;
 
   updateLobbyPlayers(players, total);
