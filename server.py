@@ -41,8 +41,10 @@ def haversine(lat1, lon1, lat2, lon2):
     return round(R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a)))
 
 
-def fetch_restaurants():
-    url  = f"https://restaurant-api.wolt.com/v1/pages/restaurants?lat={LAT}&lon={LON}"
+def fetch_restaurants(lat=None, lon=None):
+    lat = lat or LAT
+    lon = lon or LON
+    url  = f"https://restaurant-api.wolt.com/v1/pages/restaurants?lat={lat}&lon={lon}"
     resp = requests.get(url, headers=HEADERS, timeout=15)
     resp.raise_for_status()
     data = resp.json()
@@ -66,7 +68,7 @@ def fetch_restaurants():
         cat  = next((c for c, kw in TARGET_TAGS.items() if any(k in tags for k in kw)), None)
         if not cat: continue
         loc    = v.get("location") or []
-        dist_m = haversine(LAT, LON, loc[1], loc[0]) if len(loc) == 2 else None
+        dist_m = haversine(lat, lon, loc[1], loc[0]) if len(loc) == 2 else None
         raw    = (item.get("image") or {}).get("url") or (v.get("brand_image") or {}).get("url") or ""
         results.append({
             "name": v.get("name",""), "slug": slug, "category": cat,
@@ -121,7 +123,9 @@ def og_image():
 @app.route("/api/restaurants")
 def api_restaurants():
     try:
-        return jsonify({"ok": True, "restaurants": fetch_restaurants()})
+        lat = float(request.args.get("lat", LAT))
+        lon = float(request.args.get("lon", LON))
+        return jsonify({"ok": True, "restaurants": fetch_restaurants(lat, lon)})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
 
@@ -129,12 +133,14 @@ def api_restaurants():
 @app.route("/api/pool-count")
 def api_pool_count():
     try:
+        lat        = float(request.args.get("lat", LAT))
+        lon        = float(request.args.get("lon", LON))
         cats_param = request.args.get("cats", "")
         cats       = [c.strip() for c in cats_param.split(",") if c.strip()] or None
         max_radius = int(request.args.get("max_radius", 0)) or None
         fast_only  = request.args.get("fast_only", "false").lower() == "true"
         min_score  = float(request.args.get("min_score", 8.0))
-        rests      = fetch_restaurants()
+        rests      = fetch_restaurants(lat, lon)
         pool       = apply_filters(rests, cats=cats, max_radius=max_radius,
                                    fast_only=fast_only, min_score=min_score)
         return jsonify({"ok": True, "count": len(pool)})
@@ -172,9 +178,11 @@ def on_create_room(data):
     max_radius   = data.get("max_radius")
     fast_only    = bool(data.get("fast_only", False))
     min_score    = float(data.get("min_score", 8.0))
+    lat          = float(data.get("lat", LAT))
+    lon          = float(data.get("lon", LON))
 
     try:
-        rests = fetch_restaurants()
+        rests = fetch_restaurants(lat, lon)
     except Exception as e:
         emit("game_error", {"msg": f"Failed to fetch restaurants: {e}"})
         return
@@ -198,6 +206,7 @@ def on_create_room(data):
         "status":       "waiting",
         "filters":      {"cats": cats, "max_radius": max_radius,
                          "fast_only": fast_only, "min_score": min_score},
+        "location":     {"lat": lat, "lon": lon},
     }
 
     sio_join_room(code)
@@ -401,9 +410,10 @@ def on_repull_restaurants(data):
     room = rooms[code]
     if room.get("host_sid") != request.sid or room["status"] != "waiting":
         return
-    f = room.get("filters", {})
+    f   = room.get("filters", {})
+    loc = room.get("location", {})
     try:
-        rests  = fetch_restaurants()
+        rests  = fetch_restaurants(loc.get("lat", LAT), loc.get("lon", LON))
         pool   = apply_filters(rests, cats=f.get("cats"), max_radius=f.get("max_radius"),
                                fast_only=f.get("fast_only", False), min_score=f.get("min_score", 8.0))
         chosen = random.sample(pool, min(room["option_count"], len(pool)))
@@ -420,9 +430,10 @@ def on_restart_game(data):
     if code not in rooms:
         return
     room = rooms[code]
-    f = room.get("filters", {})
+    f   = room.get("filters", {})
+    loc = room.get("location", {})
     try:
-        rests  = fetch_restaurants()
+        rests  = fetch_restaurants(loc.get("lat", LAT), loc.get("lon", LON))
         pool   = apply_filters(rests, cats=f.get("cats"), max_radius=f.get("max_radius"),
                                fast_only=f.get("fast_only", False), min_score=f.get("min_score", 8.0))
         if len(pool) >= room["option_count"]:

@@ -963,6 +963,29 @@ let activeCats   = new Set(["burgers","pizza","mexican","fried chicken"]);
 let maxRadius    = 0;
 let minScore     = 8.0;
 
+// Location — default to central Tel Aviv, updated when browser resolves
+const TLV_LAT = 32.0853, TLV_LON = 34.7818;
+let userLat = TLV_LAT, userLon = TLV_LON;
+let locationReady = false;
+
+function resolveLocation() {
+  return new Promise(resolve => {
+    if (!navigator.geolocation) { resolve(); return; }
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        userLat = pos.coords.latitude;
+        userLon = pos.coords.longitude;
+        locationReady = true;
+        resolve();
+      },
+      () => resolve(), // denied or error → keep TLV default
+      { timeout: 5000, maximumAge: 60000 }
+    );
+  });
+}
+// Fire immediately so it's ready by the time user hits Create
+resolveLocation();
+
 let hasSuperliked = false;
 let superlikedSlugs = new Set(); // slugs that have been superlikes by anyone
 
@@ -1108,7 +1131,7 @@ function fetchPoolCount() {
     const fast = document.getElementById("createFast")?.checked ? "true" : "false";
     const hint = document.getElementById("poolCountHint");
     if (hint) hint.innerHTML = `<span style="color:var(--muted)">Checking…</span>`;
-    fetch(`/api/pool-count?cats=${encodeURIComponent(cats)}&max_radius=${maxRadius}&fast_only=${fast}&min_score=${minScore}`)
+    fetch(`/api/pool-count?cats=${encodeURIComponent(cats)}&max_radius=${maxRadius}&fast_only=${fast}&min_score=${minScore}&lat=${userLat}&lon=${userLon}`)
       .then(r => r.json())
       .then(d => {
         if (!d.ok) return;
@@ -1161,11 +1184,12 @@ document.querySelectorAll("#createRating .chip").forEach(btn => {
 // Fast only checkbox
 document.getElementById("createFast")?.addEventListener("change", fetchPoolCount);
 
-function createGame() {
+async function createGame() {
   initSocket();
   const name = document.getElementById("hostName").value.trim() || "Host";
   myName = name;
   document.getElementById("createBtn").disabled = true;
+  if (!locationReady) await resolveLocation();
   socket.emit("create_room", {
     host_name:    name,
     player_count: playerCount,
@@ -1174,6 +1198,8 @@ function createGame() {
     max_radius:   maxRadius || null,
     fast_only:    document.getElementById("createFast").checked,
     min_score:    minScore,
+    lat:          userLat,
+    lon:          userLon,
   });
 }
 

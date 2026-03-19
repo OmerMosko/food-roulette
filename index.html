@@ -496,6 +496,21 @@ function fmtIsraelTime() {
   });
 }
 
+// ── Geolocation ───────────────────────────────────────────────
+const TLV_LAT = 32.0853, TLV_LON = 34.7818;
+let userLat = TLV_LAT, userLon = TLV_LON;
+
+function resolveLocation() {
+  return new Promise(resolve => {
+    if (!navigator.geolocation) { resolve(); return; }
+    navigator.geolocation.getCurrentPosition(
+      pos => { userLat = pos.coords.latitude; userLon = pos.coords.longitude; resolve(); },
+      () => resolve(),
+      { timeout: 5000, maximumAge: 60000 }
+    );
+  });
+}
+
 // ── Load data from Flask backend ──────────────────────────────
 async function loadData() {
   document.getElementById("loadingScreen").style.display = "flex";
@@ -503,8 +518,10 @@ async function loadData() {
   document.getElementById("refreshBtn").disabled = true;
   document.getElementById("openCount").textContent = "⏳ Loading…";
 
+  await resolveLocation();
+
   try {
-    const res  = await fetch("/api/restaurants");
+    const res  = await fetch(`/api/restaurants?lat=${userLat}&lon=${userLon}`);
     const json = await res.json();
     if (!json.ok) throw new Error(json.error);
     ALL_RESTAURANTS = json.restaurants;
