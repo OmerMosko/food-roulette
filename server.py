@@ -54,6 +54,12 @@ def fetch_restaurants(lat=None, lon=None):
     )
     if not section:
         return []
+
+    # Extract city/country from top-level response for correct Wolt deep-links
+    wolt_city    = (data.get("city") or "tel-aviv").lower().replace(" ", "-")
+    city_data    = data.get("city_data") or {}
+    wolt_country = (city_data.get("country_code_alpha3") or "ISR").lower()
+
     results = []; seen = set()
     for item in section.get("items", []):
         v = item.get("venue", {})
@@ -76,7 +82,7 @@ def fetch_restaurants(lat=None, lon=None):
             "desc": (v.get("short_description") or "").replace("\n"," ").strip()[:90],
             "estimate": v.get("estimate_range",""), "dist_m": dist_m,
             "image_url": (raw + "?w=600") if raw else "",
-            "wolt": f"https://wolt.com/en/isr/tel-aviv/restaurant/{slug}",
+            "wolt": f"https://wolt.com/en/{wolt_country}/{wolt_city}/restaurant/{slug}",
         })
     results.sort(key=lambda x: (-x["score"], -x["volume"]))
     return results

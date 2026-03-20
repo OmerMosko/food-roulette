@@ -396,7 +396,7 @@
 <div id="app">
   <div style="position:relative;margin-bottom:4px" id="locationWrap">
     <div style="display:flex;gap:8px;align-items:center">
-      <input type="text" id="locationInput" placeholder="מזהה מיקום…" autocomplete="off" dir="auto"
+      <input type="text" id="locationInput" placeholder="Detecting location…" autocomplete="off" dir="auto"
              oninput="locOnInput()" onkeydown="locOnKey(event)" onfocus="locShowDrop()"
              style="flex:1;padding:9px 14px;background:#1a1a24;border:1px solid #2a2a38;
                     border-radius:10px;color:#f0f0f0;font-size:0.9rem;outline:none"/>
@@ -580,13 +580,13 @@ function locOnInput() {
   _locTimer = setTimeout(() => locSearch(q), 350);
 }
 async function locSearch(q) {
-  locHint("מחפש…", "#666");
+  locHint("Searching…", "#666");
   try {
     const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}`
-              + `&format=json&addressdetails=1&limit=6&countrycodes=il&accept-language=he`;
-    const res = await fetch(url, { headers: { "Accept-Language": "he" } });
+              + `&format=json&addressdetails=1&limit=6`;
+    const res = await fetch(url, { headers: { "Accept-Language": "en" } });
     const data = await res.json();
-    if (!data.length) { locHint("לא נמצא — משתמש במרכז תל אביב", "#e53935"); locHideDrop(); return; }
+    if (!data.length) { locHint("Location not found", "#e53935"); locHideDrop(); return; }
     const items = data.map(r => {
       const a = r.address || {};
       const label = a.road || a.neighbourhood || a.suburb || a.city_district || r.name || r.display_name.split(",")[0];
@@ -595,7 +595,7 @@ async function locSearch(q) {
     });
     locRender(items);
     locHint("");
-  } catch (_) { locHint("שגיאת חיפוש", "#e53935"); }
+  } catch (_) { locHint("Search error", "#e53935"); }
 }
 
 function resolveLocation() {
@@ -608,11 +608,11 @@ function resolveLocation() {
         try {
           const r = await fetch(
             `https://nominatim.openstreetmap.org/reverse?lat=${userLat}&lon=${userLon}&format=json`,
-            { headers: { "Accept-Language": "he" } }
+            { headers: { "Accept-Language": "en" } }
           );
           const d = await r.json();
           const a = d.address || {};
-          const name = a.suburb || a.neighbourhood || a.city_district || a.city || "המיקום שלך";
+          const name = a.suburb || a.neighbourhood || a.city_district || a.city || "Your location";
           const inp = document.getElementById("locationInput");
           if (inp && !inp.value) inp.value = name;
           locHint(`📍 ${name}`, "#4caf50");
@@ -621,7 +621,7 @@ function resolveLocation() {
         resolve();
       },
       () => {
-        locHint("מיקום לא זמין — משתמש במרכז תל אביב");
+        locHint("Location unavailable — using Tel Aviv centre");
         setPageLocation("מרכז תל אביב");
         resolve();
       },
@@ -633,7 +633,7 @@ function resolveLocation() {
 function useGPS() {
   document.getElementById("locationInput").value = "";
   locHideDrop();
-  locHint("מאתר מיקום GPS…", "#666");
+  locHint("Detecting GPS location…", "#666");
   resolveLocation().then(loadData);
 }
 
