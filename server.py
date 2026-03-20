@@ -178,12 +178,12 @@ def api_proxy_wolt():
 @socketio.on("create_room")
 def on_create_room(data):
     host_name    = (data.get("host_name") or "Host").strip() or "Host"
-    player_count = max(2, min(8,  int(data.get("player_count", 4))))
-    option_count = max(2, min(40, int(data.get("option_count", 6))))
-    cats         = data.get("categories") or list(TARGET_TAGS.keys())
-    max_radius   = data.get("max_radius")
-    fast_only    = bool(data.get("fast_only", False))
-    min_score    = float(data.get("min_score", 8.0))
+    option_count = 10          # default; host can change in lobby
+    player_count = 20          # no real cap — anyone can join
+    cats         = list(TARGET_TAGS.keys())   # all categories by default
+    max_radius   = None        # no distance filter by default
+    fast_only    = False
+    min_score    = 8.0
     lat          = float(data.get("lat", LAT))
     lon          = float(data.get("lon", LON))
 
@@ -193,13 +193,9 @@ def on_create_room(data):
         emit("game_error", {"msg": f"Failed to fetch restaurants: {e}"})
         return
 
-    pool = apply_filters(rests, cats=cats, max_radius=max_radius,
-                         fast_only=fast_only, min_score=min_score)
-    if len(pool) < option_count:
-        emit("game_error", {"msg": f"Only {len(pool)} restaurants match your filters. Try relaxing them."})
-        return
-
-    chosen = random.sample(pool, option_count)
+    pool   = apply_filters(rests, cats=cats, max_radius=max_radius,
+                           fast_only=fast_only, min_score=min_score)
+    chosen = random.sample(pool, min(option_count, len(pool)))
     code   = gen_code()
 
     rooms[code] = {
@@ -222,6 +218,8 @@ def on_create_room(data):
         "pool_count":   len(pool),
         "player_count": player_count,
         "players":      [rooms[code]["players"][request.sid]["name"]],
+        "filters":      rooms[code]["filters"],
+        "option_count": option_count,
     })
 
 
@@ -240,9 +238,7 @@ def on_join_game(data):
         emit("game_error", {"msg": "Game already started — join the next round!"})
         return
 
-    if len(room["players"]) >= room["player_count"]:
-        emit("game_error", {"msg": "Room is full."})
-        return
+    # No hard player cap — room is open until game starts
 
     sio_join_room(code)
     room["players"][request.sid] = {"name": name, "done": False, "votes": {}, "superlike": None}
@@ -416,7 +412,15 @@ def on_repull_restaurants(data):
     room = rooms[code]
     if room.get("host_sid") != request.sid or room["status"] != "waiting":
         return
-    f   = room.get("filters", {})
+    # Accept optional filter updates from lobby settings
+    f = room.get("filters", {})
+    if "categories" in data:   f["cats"]       = data["categories"]
+    if "max_radius"  in data:  f["max_radius"]  = data.get("max_radius")
+    if "fast_only"   in data:  f["fast_only"]   = bool(data["fast_only"])
+    if "min_score"   in data:  f["min_score"]   = float(data["min_score"])
+    room["filters"] = f
+    if "option_count" in data:
+        room["option_count"] = max(2, min(40, int(data["option_count"])))
     loc = room.get("location", {})
     try:
         rests  = fetch_restaurants(loc.get("lat", LAT), loc.get("lon", LON))
@@ -425,7 +429,10 @@ def on_repull_restaurants(data):
         chosen = random.sample(pool, min(room["option_count"], len(pool)))
         room["restaurants"] = chosen
         room["pool_count"]  = len(pool)
-        socketio.emit("restaurants_updated", {"restaurants": chosen, "pool_count": len(pool)}, room=code)
+        socketio.emit("restaurants_updated", {
+            "restaurants": chosen, "pool_count": len(pool),
+            "option_count": room["option_count"],
+        }, room=code)
     except Exception as e:
         emit("game_error", {"msg": f"Failed to repull: {e}"})
 

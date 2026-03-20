@@ -860,63 +860,7 @@
     </div>
     <div id="locationHint" style="font-size:0.75rem;color:var(--muted);margin:2px 0 14px;min-height:16px"></div>
 
-    <label>Max players (room capacity)</label>
-    <div class="stepper">
-      <button onclick="changeCount(-1)">−</button>
-      <span class="count" id="playerCountDisplay">4</span>
-      <button onclick="changeCount(1)">+</button>
-    </div>
-
-    <label>Restaurant cards to swipe</label>
-    <div class="opts-slider-wrap">
-      <div class="opts-slider-top">
-        <span class="opts-slider-num" id="optionCountDisplay">10</span>
-        <span class="opts-slider-unit">cards per player</span>
-      </div>
-      <input type="range" class="opts-slider" id="optionSlider"
-             min="2" max="40" value="10" step="1"
-             oninput="setOptions(+this.value)"/>
-      <div class="opts-presets">
-        <button class="opts-preset" onclick="setOptions(5)">5<br><span style="font-size:0.65rem;font-weight:400;color:var(--muted)">quick</span></button>
-        <button class="opts-preset on" onclick="setOptions(10)">10<br><span style="font-size:0.65rem;font-weight:400;color:var(--muted)">default</span></button>
-        <button class="opts-preset" onclick="setOptions(15)">15</button>
-        <button class="opts-preset" onclick="setOptions(20)">20</button>
-        <button class="opts-preset" id="presetAll" onclick="setOptionsMax()">Max</button>
-      </div>
-    </div>
-    <div id="poolCountHint" style="font-size:0.78rem;color:var(--muted);margin:-4px 0 14px;min-height:18px"></div>
-
-    <label>Categories</label>
-    <div class="chip-row" id="createCats">
-      <button class="chip on" data-cat="burgers">🍔 Burgers</button>
-      <button class="chip on" data-cat="pizza">🍕 Pizza</button>
-      <button class="chip on" data-cat="mexican">🌮 Mexican</button>
-      <button class="chip on" data-cat="fried chicken">🍗 Fried Chicken</button>
-    </div>
-
-    <label>Max distance</label>
-    <div class="chip-row" id="createRadius">
-      <button class="chip" data-radius="500">📍 500m</button>
-      <button class="chip" data-radius="1000">🚶 1km</button>
-      <button class="chip" data-radius="2000">🚴 2km</button>
-      <button class="chip on" data-radius="0">🌍 All</button>
-    </div>
-
-    <label>Minimum rating</label>
-    <div class="chip-row" id="createRating">
-      <button class="chip" data-score="7.5">7.5+ ⭐</button>
-      <button class="chip on" data-score="8.0">8.0+ ⭐</button>
-      <button class="chip" data-score="8.5">8.5+ ⭐</button>
-      <button class="chip" data-score="9.0">9.0+ ⭐</button>
-    </div>
-
-    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:16px">
-      <input type="checkbox" id="createFast" style="width:auto;margin:0"/>
-      <span>⚡ Fast only (≤45 min)</span>
-    </label>
-
     <div class="error-box" id="createError"></div>
-
     <button class="btn btn-primary" id="createBtn" onclick="createGame()">Create Game 🚀</button>
   </div>
   <button class="btn btn-secondary" onclick="showPage('pg-home')">← Back</button>
@@ -972,18 +916,73 @@
     </div>
   </div>
 
-  <div class="panel">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-      <h2 style="margin:0">Tonight's restaurants</h2>
+  <!-- Host-only settings panel -->
+  <div class="panel" id="lobbySettingsPanel" style="display:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <h2 style="margin:0">⚙️ Settings</h2>
       <button id="repullBtn" class="btn btn-secondary"
         onclick="repullRestaurants()"
-        style="display:none;padding:7px 14px;font-size:0.78rem;width:auto">
-        🔄 Repull
+        style="padding:7px 14px;font-size:0.78rem;width:auto">
+        🔄 Apply
       </button>
     </div>
+
+    <label>Cards to swipe per player</label>
+    <div class="opts-slider-wrap">
+      <div class="opts-slider-top">
+        <span class="opts-slider-num" id="optionCountDisplay">10</span>
+        <span class="opts-slider-unit">cards</span>
+      </div>
+      <input type="range" class="opts-slider" id="optionSlider"
+             min="2" max="40" value="10" step="1"
+             oninput="setOptions(+this.value)"/>
+      <div class="opts-presets">
+        <button class="opts-preset" onclick="setOptions(5)">5<br><span style="font-size:0.65rem;font-weight:400;color:var(--muted)">quick</span></button>
+        <button class="opts-preset on" onclick="setOptions(10)">10<br><span style="font-size:0.65rem;font-weight:400;color:var(--muted)">default</span></button>
+        <button class="opts-preset" onclick="setOptions(15)">15</button>
+        <button class="opts-preset" onclick="setOptions(20)">20</button>
+        <button class="opts-preset" id="presetAll" onclick="setOptionsMax()">Max</button>
+      </div>
+    </div>
+
+    <label>Categories</label>
+    <div class="chip-row" id="lobbyCats">
+      <button class="chip on" data-cat="burgers">🍔 Burgers</button>
+      <button class="chip on" data-cat="pizza">🍕 Pizza</button>
+      <button class="chip on" data-cat="mexican">🌮 Mexican</button>
+      <button class="chip on" data-cat="fried chicken">🍗 Fried Chicken</button>
+    </div>
+
+    <label>Max distance</label>
+    <div class="chip-row" id="lobbyRadius">
+      <button class="chip" data-radius="500">📍 500m</button>
+      <button class="chip" data-radius="1000">🚶 1km</button>
+      <button class="chip" data-radius="2000">🚴 2km</button>
+      <button class="chip on" data-radius="0">🌍 All</button>
+    </div>
+
+    <label>Minimum rating</label>
+    <div class="chip-row" id="lobbyRating">
+      <button class="chip" data-score="7.5">7.5+ ⭐</button>
+      <button class="chip on" data-score="8.0">8.0+ ⭐</button>
+      <button class="chip" data-score="8.5">8.5+ ⭐</button>
+      <button class="chip" data-score="9.0">9.0+ ⭐</button>
+    </div>
+
+    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:4px">
+      <input type="checkbox" id="lobbyFast" style="width:auto;margin:0"/>
+      <span>⚡ Fast only (≤45 min)</span>
+    </label>
+    <div id="poolCountHint" style="font-size:0.78rem;color:var(--muted);margin:8px 0 0;min-height:18px"></div>
+  </div>
+
+  <div class="panel">
+    <h2 style="margin-bottom:8px">Tonight's restaurants</h2>
     <p style="margin-bottom:12px" id="poolCountLabel"></p>
     <div id="lobbyRestaurants" style="display:flex;flex-direction:column;gap:8px"></div>
   </div>
+
+  <button class="btn btn-secondary" onclick="leaveRoom()" style="color:var(--red);border-color:var(--red);opacity:0.7">← Leave Room</button>
 </div>
 
 <!-- ═══ PAGE: TIEBREAKER ═══ -->
@@ -1332,7 +1331,6 @@ let restaurants = [];   // assigned for this game
 let cardIdx     = 0;    // current card index
 let votes       = {};   // slug → true/false
 
-let playerCount  = 4;
 let optionCount  = 10;
 let maxOptions   = 40;
 let activeCats   = new Set(["burgers","pizza","mexican","fried chicken"]);
@@ -1477,7 +1475,6 @@ function showPage(id) {
   document.getElementById(id).classList.add("active");
   // Lock body scroll on swipe page so everything fits in viewport
   document.body.classList.toggle("swipe-mode", id === "pg-swipe");
-  if (id === "pg-create") fetchPoolCount();
 }
 
 // ═══════════════════════════════════════
@@ -1521,9 +1518,8 @@ function initSocket() {
       poolLabel.innerHTML = `Showing <strong>${d.restaurants.length}</strong> of <strong style="color:var(--green)">${d.pool_count}</strong> restaurants that match your filters.`;
     }
     const btn = document.getElementById("repullBtn");
-    if (btn) { btn.disabled = false; btn.innerHTML = "🔄 Repull"; }
-    const cb = document.getElementById("createBtn");
-    if (cb)  { cb.disabled = false; cb.innerHTML = "Create Game 🚀"; }
+    if (btn) { btn.disabled = false; btn.innerHTML = "🔄 Apply"; }
+    if (d.option_count) setOptions(d.option_count);
   });
 
   socket.on("player_joined", d => {
@@ -1595,11 +1591,6 @@ function showError(msg) {
 // ═══════════════════════════════════════
 // Create / Join
 // ═══════════════════════════════════════
-function changeCount(delta) {
-  playerCount = Math.max(2, Math.min(8, playerCount + delta));
-  document.getElementById("playerCountDisplay").textContent = playerCount;
-}
-
 function setOptions(val) {
   optionCount = Math.max(2, Math.min(maxOptions, +val));
   document.getElementById("optionCountDisplay").textContent = optionCount;
@@ -1629,7 +1620,7 @@ function fetchPoolCount() {
   clearTimeout(_poolFetchTimer);
   _poolFetchTimer = setTimeout(() => {
     const cats = [...activeCats].join(",");
-    const fast = document.getElementById("createFast")?.checked ? "true" : "false";
+    const fast = document.getElementById("lobbyFast")?.checked ? "true" : "false";
     const hint = document.getElementById("poolCountHint");
     if (hint) hint.innerHTML = `<span style="color:var(--muted)">Checking…</span>`;
     fetch(`/api/pool-count?cats=${encodeURIComponent(cats)}&max_radius=${maxRadius}&fast_only=${fast}&min_score=${minScore}&lat=${userLat}&lon=${userLon}`)
@@ -1648,7 +1639,7 @@ function fetchPoolCount() {
 }
 
 // Cat chips
-document.querySelectorAll("#createCats .chip").forEach(btn => {
+document.querySelectorAll("#lobbyCats .chip").forEach(btn => {
   btn.addEventListener("click", () => {
     const cat = btn.dataset.cat;
     if (activeCats.has(cat)) {
@@ -1664,9 +1655,9 @@ document.querySelectorAll("#createCats .chip").forEach(btn => {
 });
 
 // Radius chips
-document.querySelectorAll("#createRadius .chip").forEach(btn => {
+document.querySelectorAll("#lobbyRadius .chip").forEach(btn => {
   btn.addEventListener("click", () => {
-    document.querySelectorAll("#createRadius .chip").forEach(b => b.classList.remove("on"));
+    document.querySelectorAll("#lobbyRadius .chip").forEach(b => b.classList.remove("on"));
     btn.classList.add("on");
     maxRadius = parseInt(btn.dataset.radius) || 0;
     fetchPoolCount();
@@ -1674,9 +1665,9 @@ document.querySelectorAll("#createRadius .chip").forEach(btn => {
 });
 
 // Rating chips
-document.querySelectorAll("#createRating .chip").forEach(btn => {
+document.querySelectorAll("#lobbyRating .chip").forEach(btn => {
   btn.addEventListener("click", () => {
-    document.querySelectorAll("#createRating .chip").forEach(b => b.classList.remove("on"));
+    document.querySelectorAll("#lobbyRating .chip").forEach(b => b.classList.remove("on"));
     btn.classList.add("on");
     minScore = parseFloat(btn.dataset.score);
     fetchPoolCount();
@@ -1684,7 +1675,7 @@ document.querySelectorAll("#createRating .chip").forEach(btn => {
 });
 
 // Fast only checkbox
-document.getElementById("createFast")?.addEventListener("change", fetchPoolCount);
+document.getElementById("lobbyFast")?.addEventListener("change", fetchPoolCount);
 
 async function createGame() {
   initSocket();
@@ -1696,15 +1687,9 @@ async function createGame() {
     await resolveLocation();
   }
   socket.emit("create_room", {
-    host_name:    name,
-    player_count: playerCount,
-    option_count: optionCount,
-    categories:   [...activeCats],
-    max_radius:   maxRadius || null,
-    fast_only:    document.getElementById("createFast").checked,
-    min_score:    minScore,
-    lat:          userLat,
-    lon:          userLon,
+    host_name: name,
+    lat:       userLat,
+    lon:       userLon,
   });
 }
 
@@ -1769,18 +1754,20 @@ function obFinish() {
 // ═══════════════════════════════════════
 function renderLobby(players, total, rests, poolCount) {
   document.getElementById("lobbyCode").textContent = roomCode;
-  document.getElementById("lobbyCountLabel").textContent = `(${players.length}/${total})`;
+  document.getElementById("lobbyCountLabel").textContent = `(${players.length})`;
   const link = `${location.origin}/?join=${roomCode}`;
   document.getElementById("lobbyLink").textContent = link;
 
   updateLobbyPlayers(players, total);
 
-  // Show repull button and start controls for host only
-  const repullBtn = document.getElementById("repullBtn");
-  if (repullBtn) repullBtn.style.display = isHost ? "block" : "none";
-
+  // Show settings panel + start controls for host only
+  const settingsPanel = document.getElementById("lobbySettingsPanel");
+  if (settingsPanel) settingsPanel.style.display = isHost ? "block" : "none";
   document.getElementById("hostStartWrap").style.display = isHost ? "block" : "none";
   document.getElementById("guestWaitWrap").style.display = isHost ? "none"  : "block";
+
+  // Host: fetch pool count to populate the settings hint
+  if (isHost) fetchPoolCount();
 
   // Pool count label
   const poolLabel = document.getElementById("poolCountLabel");
@@ -1840,9 +1827,23 @@ function startGame() {
 
 function repullRestaurants() {
   const btn = document.getElementById("repullBtn");
-  btn.disabled = true;
-  btn.innerHTML = "⏳ Pulling…";
-  socket.emit("repull_restaurants", { code: roomCode });
+  if (btn) { btn.disabled = true; btn.innerHTML = "⏳ Pulling…"; }
+  socket.emit("repull_restaurants", {
+    code:         roomCode,
+    categories:   [...activeCats],
+    max_radius:   maxRadius || null,
+    fast_only:    document.getElementById("lobbyFast")?.checked || false,
+    min_score:    minScore,
+    option_count: optionCount,
+  });
+}
+
+function leaveRoom() {
+  if (socket) socket.disconnect();
+  socket = null;
+  roomCode = null;
+  isHost   = false;
+  showPage("pg-home");
 }
 
 
