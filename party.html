@@ -1895,22 +1895,19 @@ function copyInviteLink() {
   }
 }
 
-function updateLobbyPlayers(players, total) {
+function updateLobbyPlayers(players) {
   const list = document.getElementById("lobbyPlayerList");
-  const max  = total || players.length;
   list.innerHTML = "";
-  for (let i = 0; i < max; i++) {
-    const div  = document.createElement("div");
+  players.forEach((name, i) => {
+    const div = document.createElement("div");
     div.className = "player-item";
-    const filled = i < players.length;
     div.innerHTML = `
-      <div class="player-dot ${filled ? "" : "empty"}"></div>
-      ${filled
-        ? `<span>${players[i]}</span>${i === 0 ? '<span class="host-badge">HOST</span>' : ''}`
-        : `<span class="slot-label">Waiting for player ${i+1}…</span>`}`;
+      <div class="player-dot"></div>
+      <span>${name}</span>
+      ${i === 0 ? '<span class="host-badge">HOST</span>' : ''}`;
     list.appendChild(div);
-  }
-  document.getElementById("lobbyCountLabel").textContent = `(${players.length}/${max})`;
+  });
+  document.getElementById("lobbyCountLabel").textContent = `(${players.length})`;
 
   // Update start button state (host only)
   if (isHost) {
