@@ -1518,7 +1518,14 @@ function initSocket() {
     if (poolLabel) {
       poolLabel.innerHTML = `Showing <strong>${d.restaurants.length}</strong> of <strong style="color:var(--green)">${d.pool_count}</strong> restaurants that match your filters.`;
     }
-    if (d.option_count) setOptions(d.option_count);
+    const poolHint = document.getElementById("poolCountHint");
+    if (poolHint) {
+      poolHint.innerHTML = `<span style="color:var(--green);font-weight:600">${d.pool_count}</span> restaurants available`;
+    }
+    maxOptions = d.pool_count;
+    const slider = document.getElementById("optionSlider");
+    if (slider) slider.max = maxOptions;
+    if (d.option_count) setOptions(Math.min(d.option_count, maxOptions));
     setSettingsStatus("done", d.pool_count);
     setTimeout(() => setSettingsStatus(""), 3000);
   });
