@@ -1467,7 +1467,9 @@ function resolveLocation() {
         resolve();
       },
       () => {
-        locHint("Location unavailable — using Tel Aviv centre");
+        const inp = document.getElementById("locationInput");
+        if (inp && !inp.value) inp.placeholder = "Tel Aviv centre (GPS unavailable)";
+        locHint("");
         resolve();
       },
       { timeout: 6000, maximumAge: 60000 }
