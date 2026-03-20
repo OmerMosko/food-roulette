@@ -898,11 +898,7 @@
   <div class="panel" id="lobbySettingsPanel" style="display:none">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
       <h2 style="margin:0">⚙️ Settings</h2>
-      <button id="repullBtn" class="btn btn-secondary"
-        onclick="repullRestaurants()"
-        style="padding:7px 14px;font-size:0.78rem;width:auto">
-        🔄 Apply
-      </button>
+      <span id="settingsStatus" style="font-size:0.78rem;color:var(--muted)"></span>
     </div>
 
     <label>Cards to swipe per player</label>
@@ -913,13 +909,13 @@
       </div>
       <input type="range" class="opts-slider" id="optionSlider"
              min="2" max="40" value="10" step="1"
-             oninput="setOptions(+this.value)"/>
+             oninput="setOptions(+this.value); scheduleRepull()"/>
       <div class="opts-presets">
-        <button class="opts-preset" onclick="setOptions(5)">5<br><span style="font-size:0.65rem;font-weight:400;color:var(--muted)">quick</span></button>
-        <button class="opts-preset on" onclick="setOptions(10)">10<br><span style="font-size:0.65rem;font-weight:400;color:var(--muted)">default</span></button>
-        <button class="opts-preset" onclick="setOptions(15)">15</button>
-        <button class="opts-preset" onclick="setOptions(20)">20</button>
-        <button class="opts-preset" id="presetAll" onclick="setOptionsMax()">Max</button>
+        <button class="opts-preset" onclick="setOptions(5);scheduleRepull()">5<br><span style="font-size:0.65rem;font-weight:400;color:var(--muted)">quick</span></button>
+        <button class="opts-preset on" onclick="setOptions(10);scheduleRepull()">10<br><span style="font-size:0.65rem;font-weight:400;color:var(--muted)">default</span></button>
+        <button class="opts-preset" onclick="setOptions(15);scheduleRepull()">15</button>
+        <button class="opts-preset" onclick="setOptions(20);scheduleRepull()">20</button>
+        <button class="opts-preset" id="presetAll" onclick="setOptionsMax();scheduleRepull()">Max</button>
       </div>
     </div>
 
@@ -1522,9 +1518,9 @@ function initSocket() {
     if (poolLabel) {
       poolLabel.innerHTML = `Showing <strong>${d.restaurants.length}</strong> of <strong style="color:var(--green)">${d.pool_count}</strong> restaurants that match your filters.`;
     }
-    const btn = document.getElementById("repullBtn");
-    if (btn) { btn.disabled = false; btn.innerHTML = "🔄 Apply"; }
     if (d.option_count) setOptions(d.option_count);
+    setSettingsStatus("done", d.pool_count);
+    setTimeout(() => setSettingsStatus(""), 3000);
   });
 
   socket.on("player_joined", d => {
@@ -1620,6 +1616,24 @@ function setOptionsMax() {
   if (btns[4]) btns[4].classList.add("on");
 }
 
+// ── Auto-apply settings with debounce ────────────────────
+let _repullTimer = null;
+function scheduleRepull() {
+  if (!roomCode || !isHost) return; // only in active lobby
+  clearTimeout(_repullTimer);
+  setSettingsStatus("pending");
+  _repullTimer = setTimeout(() => repullRestaurants(), 900);
+}
+
+function setSettingsStatus(state, count) {
+  const el = document.getElementById("settingsStatus");
+  if (!el) return;
+  if (state === "pending")  el.innerHTML = `<span style="color:var(--muted)">⏳ Updating…</span>`;
+  if (state === "loading")  el.innerHTML = `<span style="color:var(--muted)">🔄 Fetching…</span>`;
+  if (state === "done")     el.innerHTML = `<span style="color:var(--green)">✅ ${count} restaurants</span>`;
+  if (state === "")         el.innerHTML = "";
+}
+
 let _poolFetchTimer = null;
 function fetchPoolCount() {
   clearTimeout(_poolFetchTimer);
@@ -1655,7 +1669,7 @@ document.querySelectorAll("#lobbyCats .chip").forEach(btn => {
       activeCats.add(cat);
       btn.classList.add("on");
     }
-    fetchPoolCount();
+    scheduleRepull();
   });
 });
 
@@ -1665,7 +1679,7 @@ document.querySelectorAll("#lobbyRadius .chip").forEach(btn => {
     document.querySelectorAll("#lobbyRadius .chip").forEach(b => b.classList.remove("on"));
     btn.classList.add("on");
     maxRadius = parseInt(btn.dataset.radius) || 0;
-    fetchPoolCount();
+    scheduleRepull();
   });
 });
 
@@ -1675,12 +1689,12 @@ document.querySelectorAll("#lobbyRating .chip").forEach(btn => {
     document.querySelectorAll("#lobbyRating .chip").forEach(b => b.classList.remove("on"));
     btn.classList.add("on");
     minScore = parseFloat(btn.dataset.score);
-    fetchPoolCount();
+    scheduleRepull();
   });
 });
 
 // Fast only checkbox
-document.getElementById("lobbyFast")?.addEventListener("change", fetchPoolCount);
+document.getElementById("lobbyFast")?.addEventListener("change", scheduleRepull);
 
 async function createGame() {
   initSocket();
@@ -1839,8 +1853,7 @@ function startGame() {
 }
 
 function repullRestaurants() {
-  const btn = document.getElementById("repullBtn");
-  if (btn) { btn.disabled = true; btn.innerHTML = "⏳ Pulling…"; }
+  setSettingsStatus("loading");
   socket.emit("repull_restaurants", {
     code:         roomCode,
     categories:   [...activeCats],
