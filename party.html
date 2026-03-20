@@ -841,7 +841,7 @@
     <h2>🎮 Create Game</h2>
 
     <label>Your name</label>
-    <input type="text" id="hostName" placeholder="e.g. Mosko" maxlength="20"/>
+    <input type="text" id="hostName" placeholder="Your nickname" maxlength="20"/>
 
     <label>Location</label>
     <div style="position:relative;margin-bottom:4px" id="locationWrap">
@@ -873,7 +873,7 @@
     <label>Room code (4 letters)</label>
     <input type="text" id="joinCode" class="input-code" placeholder="ABCD" maxlength="4"/>
     <label>Your name</label>
-    <input type="text" id="joinName" placeholder="e.g. Omer" maxlength="20"/>
+    <input type="text" id="joinName" placeholder="Your nickname" maxlength="20"/>
     <div class="error-box" id="joinError"></div>
     <button class="btn btn-primary" id="joinBtn" onclick="joinGame()">Join Game →</button>
   </div>
@@ -1327,6 +1327,31 @@ let socket      = null;
 let roomCode    = null;
 let myName      = null;
 let isHost      = false;
+
+// ── Funny default names ───────────────────────────────────
+const FUNNY_NAMES = [
+  "HungryWolf","TacoDestroyer","PizzaOverlord","BurgerKnight",
+  "FalafelFan","WingsWizard","NoodleNinja","SushiSamurai",
+  "CurryHero","GarlicLord","CheeseMonger","SauceGoblin",
+  "DonerDude","HummusBoss","SchnitzelGuy","RamenRider",
+  "GrillMaster","FriesLover","DipKing","SaladSkipper",
+  "WaffleWarlord","TacoTuesday","BagelBandit","PastaPatrol",
+  "MomoMaster","KebabKing","DumplingDynasty","NachoNinja",
+  "PretzelPrince","StirFryGod","BaoHero","TempuraTyrant",
+  "UdonUnicorn","CrepeCrusader","GnocchiGhost","TortillaKnight",
+  "PitaPirate","MatzoBall","ShawarmaShark","PadThaiPanda",
+];
+function randomName() {
+  return FUNNY_NAMES[Math.floor(Math.random() * FUNNY_NAMES.length)];
+}
+// Pre-fill name fields with a fun default
+(function() {
+  const name = randomName();
+  const h = document.getElementById("hostName");
+  const j = document.getElementById("joinName");
+  if (h && !h.value) h.value = name;
+  if (j && !j.value) j.value = name;
+})();
 let restaurants = [];   // assigned for this game
 let cardIdx     = 0;    // current card index
 let votes       = {};   // slug → true/false
