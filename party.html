@@ -832,6 +832,12 @@
     <button class="btn-solo-hero" onclick="window.location='/solo'">
       🎯 Solo Roulette — just for me
     </button>
+
+    <button onclick="replayTutorial()"
+      style="background:none;border:none;color:var(--muted);font-size:0.82rem;
+             cursor:pointer;margin-top:8px;padding:6px 12px;opacity:0.7">
+      ❓ How to play?
+    </button>
   </div>
 </div>
 
@@ -1773,6 +1779,14 @@ function obNext() {
 function obFinish() {
   localStorage.setItem(ONBOARD_KEY, '1');
   pendingJoinCode ? showPage('pg-join') : showPage('pg-home');
+}
+
+function replayTutorial() {
+  localStorage.removeItem(ONBOARD_KEY);
+  localStorage.removeItem(TUTOR_KEY);
+  obStep = 0;
+  obGo(0);
+  showPage('pg-onboard');
 }
 // ─────────────────────────────────────────────────────────
 
