@@ -2190,12 +2190,20 @@ function obNext() {
   if (obStep < 2) { obGo(obStep + 1); } else { obFinish(); }
 }
 
+let _replayingTutorial = false;
+
 function obFinish() {
   localStorage.setItem(ONBOARD_KEY, '1');
-  pendingJoinCode ? showPage('pg-join') : showPage('pg-home');
+  if (_replayingTutorial) {
+    _replayingTutorial = false;
+    showPage('pg-home');
+  } else {
+    pendingJoinCode ? showPage('pg-join') : showPage('pg-home');
+  }
 }
 
 function replayTutorial() {
+  _replayingTutorial = true;
   localStorage.removeItem(ONBOARD_KEY);
   localStorage.removeItem(TUTOR_KEY);
   obStep = 0;
