@@ -118,6 +118,19 @@ def apply_filters(rests, cats=None, max_radius=None, fast_only=False, min_score=
     return out
 
 
+def _build_chosen(all_rests, filtered_pool, pinned_slugs, option_count):
+    """Build the final deck: pinned restaurants always in, rest filled from filtered pool."""
+    if not pinned_slugs:
+        return random.sample(filtered_pool, min(option_count, len(filtered_pool)))
+    pinned_set   = set(pinned_slugs)
+    pinned_rests = [r for r in all_rests if r["slug"] in pinned_set]
+    pool_fill    = [r for r in filtered_pool if r["slug"] not in pinned_set]
+    fill_count   = max(0, option_count - len(pinned_rests))
+    chosen       = pinned_rests + random.sample(pool_fill, min(fill_count, len(pool_fill)))
+    random.shuffle(chosen)
+    return chosen
+
+
 # ── Helpers ─────────────────────────────────────────────────────
 def gen_code():
     while True:
@@ -164,6 +177,23 @@ def api_pool_count():
         pool       = apply_filters(rests, cats=cats, max_radius=max_radius,
                                    fast_only=fast_only, min_score=min_score)
         return jsonify({"ok": True, "count": len(pool)})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/api/search")
+def api_search():
+    """Name-search across all Wolt restaurants (unfiltered). Used for pin-specific-place."""
+    q   = request.args.get("q", "").strip().lower()
+    lat = float(request.args.get("lat", LAT))
+    lon = float(request.args.get("lon", LON))
+    if len(q) < 2:
+        return jsonify({"ok": True, "results": []})
+    try:
+        rests   = fetch_restaurants(lat, lon)
+        matches = [r for r in rests if q in r["name"].lower()]
+        matches.sort(key=lambda r: r.get("score", 0), reverse=True)
+        return jsonify({"ok": True, "results": matches[:8]})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
 
@@ -223,6 +253,7 @@ def on_create_room(data):
         "filters":      {"cats": cats, "max_radius": max_radius,
                          "fast_only": fast_only, "min_score": min_score},
         "location":     {"lat": lat, "lon": lon},
+        "pinned_slugs": [],
     }
 
     sio_join_room(code)
@@ -435,12 +466,14 @@ def on_repull_restaurants(data):
     room["filters"] = f
     if "option_count" in data:
         room["option_count"] = max(2, min(40, int(data["option_count"])))
+    if "pinned_slugs" in data:
+        room["pinned_slugs"] = list(data["pinned_slugs"])
     loc = room.get("location", {})
     try:
         rests  = fetch_restaurants(loc.get("lat", LAT), loc.get("lon", LON))
         pool   = apply_filters(rests, cats=f.get("cats"), max_radius=f.get("max_radius"),
                                fast_only=f.get("fast_only", False), min_score=f.get("min_score", 8.0))
-        chosen = random.sample(pool, min(room["option_count"], len(pool)))
+        chosen = _build_chosen(rests, pool, room.get("pinned_slugs", []), room["option_count"])
         room["restaurants"] = chosen
         room["pool_count"]  = len(pool)
         socketio.emit("restaurants_updated", {
@@ -463,8 +496,7 @@ def on_restart_game(data):
         rests  = fetch_restaurants(loc.get("lat", LAT), loc.get("lon", LON))
         pool   = apply_filters(rests, cats=f.get("cats"), max_radius=f.get("max_radius"),
                                fast_only=f.get("fast_only", False), min_score=f.get("min_score", 8.0))
-        if len(pool) >= room["option_count"]:
-            room["restaurants"] = random.sample(pool, room["option_count"])
+        room["restaurants"] = _build_chosen(rests, pool, room.get("pinned_slugs", []), room["option_count"])
     except Exception:
         pass
     for p in room["players"].values():
