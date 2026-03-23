@@ -1649,6 +1649,7 @@ let activeCats   = new Set([
 let maxRadius    = 0;
 let minScore     = 8.0;
 let pinnedItems  = []; // [{slug, name, emoji, score}]
+let offlinePins  = new Set(); // slugs that are pinned but currently closed on Wolt
 
 // ── Location autocomplete ────────────────────────────────────────
 const TLV_LAT = 32.0853, TLV_LON = 34.7818;
@@ -1840,6 +1841,14 @@ function initSocket() {
 
   socket.on("restaurants_updated", d => {
     restaurants = d.restaurants;
+    // Track which pinned places are currently offline
+    if (d.offline_pins && d.offline_pins.length) {
+      offlinePins = new Set(d.offline_pins);
+      renderPinnedChips(); // re-render chips with offline indicators
+    } else {
+      offlinePins = new Set();
+      renderPinnedChips();
+    }
     renderRestaurantList(d.restaurants);
     const poolLabel = document.getElementById("poolCountLabel");
     if (poolLabel) {
@@ -2091,11 +2100,19 @@ function renderPinnedChips() {
   const el = document.getElementById("pinnedChips");
   if (!el) return;
   if (!pinnedItems.length) { el.innerHTML = ""; return; }
-  el.innerHTML = pinnedItems.map(p =>
-    `<span class="pinned-chip">${p.emoji} ${p.name}
+  el.innerHTML = pinnedItems.map(p => {
+    const closed = offlinePins.has(p.slug);
+    const closedBadge = closed
+      ? `<span style="font-size:0.65rem;background:rgba(255,80,80,.15);color:var(--red);
+              border-radius:10px;padding:1px 5px;margin-left:2px">❌ closed</span>`
+      : '';
+    const chipStyle = closed
+      ? 'opacity:0.6;border-color:rgba(255,80,80,.4);color:var(--muted)'
+      : '';
+    return `<span class="pinned-chip" style="${chipStyle}">${p.emoji} ${p.name}${closedBadge}
        <button class="pin-remove" onmousedown="unpinPlace('${p.slug}')">×</button>
-     </span>`
-  ).join("");
+     </span>`;
+  }).join("");
 }
 
 function hidePinDrop() {
@@ -2361,6 +2378,7 @@ function leaveRoom() {
   roomCode    = null;
   isHost      = false;
   pinnedItems = [];
+  offlinePins = new Set();
   renderPinnedChips();
   showPage("pg-home");
 }

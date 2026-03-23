@@ -119,16 +119,19 @@ def apply_filters(rests, cats=None, max_radius=None, fast_only=False, min_score=
 
 
 def _build_chosen(all_rests, filtered_pool, pinned_slugs, option_count):
-    """Build the final deck: pinned restaurants always in, rest filled from filtered pool."""
+    """Build the final deck: pinned restaurants always in, rest filled from filtered pool.
+    Returns (chosen_list, offline_slugs) — offline_slugs are pinned places that are currently closed."""
     if not pinned_slugs:
-        return random.sample(filtered_pool, min(option_count, len(filtered_pool)))
-    pinned_set   = set(pinned_slugs)
-    pinned_rests = [r for r in all_rests if r["slug"] in pinned_set]
-    pool_fill    = [r for r in filtered_pool if r["slug"] not in pinned_set]
-    fill_count   = max(0, option_count - len(pinned_rests))
-    chosen       = pinned_rests + random.sample(pool_fill, min(fill_count, len(pool_fill)))
+        return random.sample(filtered_pool, min(option_count, len(filtered_pool))), []
+    pinned_set      = set(pinned_slugs)
+    all_pinned      = [r for r in all_rests if r["slug"] in pinned_set]
+    pinned_online   = [r for r in all_pinned if r.get("online", False)]
+    offline_slugs   = [r["slug"] for r in all_pinned if not r.get("online", False)]
+    pool_fill       = [r for r in filtered_pool if r["slug"] not in pinned_set]
+    fill_count      = max(0, option_count - len(pinned_online))
+    chosen          = pinned_online + random.sample(pool_fill, min(fill_count, len(pool_fill)))
     random.shuffle(chosen)
-    return chosen
+    return chosen, offline_slugs
 
 
 # ── Helpers ─────────────────────────────────────────────────────
@@ -191,7 +194,7 @@ def api_search():
         return jsonify({"ok": True, "results": []})
     try:
         rests   = fetch_restaurants(lat, lon)
-        matches = [r for r in rests if q in r["name"].lower()]
+        matches = [r for r in rests if q in r["name"].lower() and r.get("online", False)]
         matches.sort(key=lambda r: r.get("score", 0), reverse=True)
         return jsonify({"ok": True, "results": matches[:8]})
     except Exception as e:
@@ -473,12 +476,13 @@ def on_repull_restaurants(data):
         rests  = fetch_restaurants(loc.get("lat", LAT), loc.get("lon", LON))
         pool   = apply_filters(rests, cats=f.get("cats"), max_radius=f.get("max_radius"),
                                fast_only=f.get("fast_only", False), min_score=f.get("min_score", 8.0))
-        chosen = _build_chosen(rests, pool, room.get("pinned_slugs", []), room["option_count"])
+        chosen, offline_pins = _build_chosen(rests, pool, room.get("pinned_slugs", []), room["option_count"])
         room["restaurants"] = chosen
         room["pool_count"]  = len(pool)
         socketio.emit("restaurants_updated", {
             "restaurants": chosen, "pool_count": len(pool),
             "option_count": room["option_count"],
+            "offline_pins": offline_pins,
         }, room=code)
     except Exception as e:
         emit("game_error", {"msg": f"Failed to repull: {e}"})
@@ -496,7 +500,7 @@ def on_restart_game(data):
         rests  = fetch_restaurants(loc.get("lat", LAT), loc.get("lon", LON))
         pool   = apply_filters(rests, cats=f.get("cats"), max_radius=f.get("max_radius"),
                                fast_only=f.get("fast_only", False), min_score=f.get("min_score", 8.0))
-        room["restaurants"] = _build_chosen(rests, pool, room.get("pinned_slugs", []), room["option_count"])
+        room["restaurants"], _ = _build_chosen(rests, pool, room.get("pinned_slugs", []), room["option_count"])
     except Exception:
         pass
     for p in room["players"].values():
