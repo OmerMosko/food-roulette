@@ -770,6 +770,10 @@
 
 <nav>
   <h1 onclick="showPage('pg-home')" style="cursor:pointer" title="Home">🎉 Food Roulette</h1>
+  <button id="langToggle" onclick="toggleLang()"
+    style="background:transparent;border:1px solid var(--border);color:var(--text);
+           border-radius:20px;padding:4px 12px;font-size:0.78rem;font-weight:700;
+           cursor:pointer;flex-shrink:0">עב</button>
 </nav>
 <div id="stepBar">
   <span class="step-pill" id="sp-1">1 · Set Up</span>
@@ -857,25 +861,25 @@
     <span class="hero-emoji">🎲</span>
 
     <h1 class="hero-title">Food Roulette</h1>
-    <p class="hero-sub">
+    <p class="hero-sub" id="heroSub">
       Stop arguing about where to eat.<br>
       <strong>Everyone swipes, the group decides — like Tinder for restaurants.</strong>
     </p>
 
-    <button onclick="replayTutorial()"
+    <button id="homeHowBtn" onclick="replayTutorial()"
       style="background:none;border:none;color:var(--muted);font-size:0.82rem;
              cursor:pointer;padding:4px 12px;opacity:0.75;margin-bottom:4px">
       ❓ How to play?
     </button>
 
-    <button class="btn-hero" onclick="showPage('pg-create')">
+    <button id="homeCreateBtn" class="btn-hero" onclick="showPage('pg-create')">
       <span class="btn-hero-icon">🎮</span> Create Multiplayer Game
     </button>
-    <button class="btn-join-hero" onclick="showPage('pg-join')">
+    <button id="homeJoinBtn" class="btn-join-hero" onclick="showPage('pg-join')">
       🔗 Join with a code
     </button>
     <div class="divider-text">or</div>
-    <button class="btn-solo-hero" onclick="window.location='/solo'">
+    <button id="homeSoloBtn" class="btn-solo-hero" onclick="window.location='/solo'">
       🎯 Solo Roulette — just for me
     </button>
   </div>
@@ -884,12 +888,12 @@
 <!-- ═══ PAGE: CREATE ═══ -->
 <div class="page" id="pg-create">
   <div class="panel">
-    <h2>🎮 Create Game</h2>
+    <h2 id="createPageH2">🎮 Create Game</h2>
 
-    <label>Your name</label>
+    <label id="createNameLbl">Your name</label>
     <input type="text" id="hostName" placeholder="Your nickname" maxlength="20"/>
 
-    <label>Location</label>
+    <label id="createLocLbl">Location</label>
     <div style="position:relative;margin-bottom:4px" id="locationWrap">
       <div style="display:flex;gap:8px;align-items:center">
         <input type="text" id="locationInput" placeholder="Detecting location…" autocomplete="off" dir="auto"
@@ -909,29 +913,29 @@
     <div class="error-box" id="createError"></div>
     <button class="btn btn-primary" id="createBtn" onclick="createGame()">Create Game 🚀</button>
   </div>
-  <button class="btn btn-secondary" onclick="showPage('pg-home')">← Back</button>
+  <button class="btn btn-secondary btn-back" onclick="showPage('pg-home')">← Back</button>
 </div>
 
 <!-- ═══ PAGE: JOIN ═══ -->
 <div class="page" id="pg-join">
   <div class="panel">
-    <h2>🔗 Join a Game</h2>
-    <label style="font-size:0.7rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">What's your name?</label>
+    <h2 id="joinPageH2">🔗 Join a Game</h2>
+    <label id="joinNameLbl" style="font-size:0.7rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">What's your name?</label>
     <input type="text" id="joinName" placeholder="Your nickname" maxlength="20"
       style="font-size:1.35rem;padding:14px 16px;font-weight:700"/>
-    <label style="font-size:0.7rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-top:14px">Room code</label>
+    <label id="joinCodeLbl" style="font-size:0.7rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-top:14px">Room code</label>
     <input type="text" id="joinCode" class="input-code" placeholder="ABCD" maxlength="4"
       style="font-size:1.1rem;letter-spacing:6px;padding:10px 16px;max-width:160px;align-self:flex-start"/>
     <div class="error-box" id="joinError"></div>
     <button class="btn btn-primary" id="joinBtn" onclick="joinGame()">Join Game →</button>
   </div>
-  <button class="btn btn-secondary" onclick="showPage('pg-home')">← Back</button>
+  <button class="btn btn-secondary btn-back" onclick="showPage('pg-home')">← Back</button>
 </div>
 
 <!-- ═══ PAGE: LOBBY ═══ -->
 <div class="page" id="pg-lobby">
   <div class="panel" style="display:flex;flex-direction:column;align-items:center;text-align:center">
-    <div class="winner-label">Room Code</div>
+    <div class="winner-label" id="lobbyCodeLbl">Room Code</div>
     <div class="code-badge" id="lobbyCode" style="padding-left:8px">----</div>
     <div class="code-hint" id="lobbyHint" style="margin-top:4px">Share this code with your friends</div>
     <div style="margin-top:12px">
@@ -944,7 +948,7 @@
   </div>
 
   <div class="panel">
-    <h2>Players <span id="lobbyCountLabel" style="color:var(--muted);font-weight:400"></span></h2>
+    <h2><span id="lobbyPlayersH2">Players</span> <span id="lobbyCountLabel" style="color:var(--muted);font-weight:400"></span></h2>
     <div class="player-list" id="lobbyPlayerList"></div>
 
     <!-- Host: start button -->
@@ -960,10 +964,10 @@
 
     <!-- Guest: waiting message -->
     <div id="guestWaitWrap" style="display:none;margin-top:14px">
-      <div class="wait-callout wait-callout-blue">
+      <div id="guestWaitCallout" class="wait-callout wait-callout-blue">
         ⏳ Waiting for the host to start the game…
       </div>
-      <div style="margin-top:8px;font-size:0.75rem;color:var(--muted);text-align:center">
+      <div id="guestWaitReady" style="margin-top:8px;font-size:0.75rem;color:var(--muted);text-align:center">
         You're all set! Sit tight 🍽️
       </div>
     </div>
@@ -972,11 +976,11 @@
   <!-- Host-only settings panel -->
   <div class="panel" id="lobbySettingsPanel" style="display:none">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-      <h2 style="margin:0">⚙️ Settings</h2>
+      <h2 id="settingsPanelH2" style="margin:0">⚙️ Settings</h2>
       <span id="settingsStatus" style="font-size:0.78rem;color:var(--muted)"></span>
     </div>
 
-    <label>Cards to swipe per player</label>
+    <label id="cardsLbl">Cards to swipe per player</label>
     <div class="opts-slider-wrap">
       <div class="opts-slider-top">
         <span class="opts-slider-num" id="optionCountDisplay">10</span>
@@ -1016,7 +1020,7 @@
       <button class="chip on" data-cat="street food">🍟 Street Food</button>
     </div>
 
-    <label>Max distance</label>
+    <label id="radiusLbl">Max distance</label>
     <div class="chip-row" id="lobbyRadius">
       <button class="chip" data-radius="500">📍 500m</button>
       <button class="chip" data-radius="1000">🚶 1km</button>
@@ -1024,7 +1028,7 @@
       <button class="chip on" data-radius="0">🌍 All</button>
     </div>
 
-    <label>Minimum rating</label>
+    <label id="ratingLbl">Minimum rating</label>
     <div class="chip-row" id="lobbyRating">
       <button class="chip" data-score="7.5">7.5+ ⭐</button>
       <button class="chip on" data-score="8.0">8.0+ ⭐</button>
@@ -1034,13 +1038,13 @@
 
     <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:4px">
       <input type="checkbox" id="lobbyFast" style="width:auto;margin:0"/>
-      <span>⚡ Fast only (≤45 min)</span>
+      <span id="fastSpan">⚡ Fast only (≤45 min)</span>
     </label>
     <div id="poolCountHint" style="font-size:0.78rem;color:var(--muted);margin:8px 0 0;min-height:18px"></div>
 
     <div style="margin-top:18px;border-top:1px solid var(--border);padding-top:16px">
-      <label style="margin-bottom:8px">📌 Pin specific places
-        <span style="font-size:0.72rem;color:var(--muted);font-weight:400;margin-left:4px">always in your game</span>
+      <label style="margin-bottom:8px"><span id="pinTitleSpan">📌 Pin specific places</span>
+        <span id="pinSubSpan" style="font-size:0.72rem;color:var(--muted);font-weight:400;margin-left:4px">always in your game</span>
       </label>
       <div id="pinnedChips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;min-height:0"></div>
       <div style="position:relative">
@@ -1053,12 +1057,12 @@
   </div>
 
   <div class="panel">
-    <h2 style="margin-bottom:8px">Tonight's restaurants</h2>
+    <h2 id="tonightH2" style="margin-bottom:8px">Tonight's restaurants</h2>
     <p style="margin-bottom:12px" id="poolCountLabel"></p>
     <div id="lobbyRestaurants" style="display:flex;flex-direction:column;gap:8px"></div>
   </div>
 
-  <button class="btn btn-secondary" onclick="leaveRoom()" style="color:var(--red);border-color:var(--red);opacity:0.7">← Leave Room</button>
+  <button id="leaveRoomBtn" class="btn btn-secondary" onclick="leaveRoom()" style="color:var(--red);border-color:var(--red);opacity:0.7">← Leave Room</button>
 </div>
 
 <!-- ═══ PAGE: TIEBREAKER ═══ -->
@@ -1112,8 +1116,8 @@
   <!-- waiting state (shown after all swiped) -->
   <div id="waitingOthers" style="display:none;position:absolute;inset:0;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;text-align:center;background:var(--bg);z-index:10">
     <div style="font-size:5rem;animation:bounce-wait 1.4s ease-in-out infinite">☕</div>
-    <div style="font-size:1.4rem;font-weight:800;color:var(--text)">You're done!</div>
-    <div style="font-size:0.9rem;color:var(--muted)">Waiting for the others to finish…</div>
+    <div id="waitDoneText" style="font-size:1.4rem;font-weight:800;color:var(--text)">You're done!</div>
+    <div id="waitOthersText" style="font-size:0.9rem;color:var(--muted)">Waiting for the others to finish…</div>
 
     <div style="width:100%;max-width:340px;margin-top:8px">
       <div class="progress-bar-wrap">
@@ -1129,8 +1133,8 @@
 <!-- ═══ PAGE: RANKING ═══ -->
 <div class="page" id="pg-ranking">
   <div style="text-align:center;width:100%;margin-bottom:4px">
-    <div style="font-size:1rem;font-weight:700">🏆 <span style="color:var(--red)">Tiebreaker — Rank them!</span></div>
-    <div style="font-size:0.8rem;color:var(--muted);margin-top:4px">Drag or use arrows · #1 = your top pick</div>
+    <div id="rankTitleDiv" style="font-size:1rem;font-weight:700">🏆 <span style="color:var(--red)">Tiebreaker — Rank them!</span></div>
+    <div id="rankSubDiv" style="font-size:0.8rem;color:var(--muted);margin-top:4px">Drag or use arrows · #1 = your top pick</div>
   </div>
 
   <div id="rankList" style="display:flex;flex-direction:column;gap:8px;width:100%;touch-action:none"></div>
@@ -1154,7 +1158,7 @@
   <div id="resultWinner" class="result-winner" style="display:none">
     <img id="winnerImg" src="" alt="" style="width:calc(100% + 48px);margin:-28px -28px 16px;height:180px;object-fit:cover;border-radius:20px 20px 0 0;display:none"/>
     <div class="winner-emoji" id="winnerEmoji">🎉</div>
-    <div class="winner-label">You're ordering from</div>
+    <div id="resultOrderFrom" class="winner-label">You're ordering from</div>
     <div class="winner-name" id="winnerName"></div>
     <div class="winner-score" id="winnerMeta"></div>
     <a id="winnerLink" class="btn btn-green" href="#" target="_blank"
@@ -1166,12 +1170,12 @@
 
   <div id="resultNoWinner" class="panel" style="text-align:center;display:none">
     <div style="font-size:2.5rem;margin-bottom:8px">😅</div>
-    <h2 style="margin-bottom:8px">No consensus!</h2>
-    <p>No restaurant got 70%+ approval. Here's how everyone voted:</p>
+    <h2 id="noWinnerH2" style="margin-bottom:8px">No consensus!</h2>
+    <p id="noWinnerP">No restaurant got 70%+ approval. Here's how everyone voted:</p>
   </div>
 
   <div class="panel" id="resultTableWrap">
-    <h2>All votes</h2>
+    <h2 id="allVotesH2">All votes</h2>
     <table class="result-table" id="resultTable">
       <thead id="resultTableHead">
         <tr>
@@ -1185,8 +1189,8 @@
     </table>
   </div>
 
-  <button class="btn btn-primary" onclick="playAgain()">🔄 Play Again</button>
-  <button class="btn btn-secondary" onclick="showPage('pg-home')">← Home</button>
+  <button id="resultAgainBtn" class="btn btn-primary" onclick="playAgain()">🔄 Play Again</button>
+  <button class="btn btn-secondary btn-back" onclick="showPage('pg-home')">← Home</button>
 </div>
 
 <script>
@@ -1432,6 +1436,156 @@ function randomName() {
   if (h && !h.value) h.value = name;
   if (j && !j.value) j.value = name;
 })();
+// ═══════════════════════════════════════
+// 🌐 i18n — Language support
+// ═══════════════════════════════════════
+const LANGS = {
+  en: {
+    sp1:"1 · Set Up", sp2:"2 · Lobby", sp3:"3 · Swipe", sp4:"4 · Results",
+    heroSub:'Stop arguing about where to eat.<br><strong>Everyone swipes, the group decides — like Tinder for restaurants.</strong>',
+    btnCreate:'<span class="btn-hero-icon">🎮</span> Create Multiplayer Game',
+    btnJoin:'🔗 Join with a code', btnSolo:'🎯 Solo Roulette — just for me', btnHowto:'❓ How to play?',
+    createH2:'🎮 Create Game', lblName:'Your name', phName:'Your nickname',
+    lblLoc:'Location', phLoc:'Detecting location…', btnCreateGame:'Create Game 🚀',
+    btnBack:'← Back',
+    joinH2:'🔗 Join a Game', lblJoinName:"What's your name?", phJoinName:'Your nickname',
+    lblCode:'Room code', btnJoinGame:'Join Game →',
+    lobbyCodeLbl:'Room Code', lobbyCodeHint:'Share this code with your friends',
+    lobbyShare:'🔗 Share invite link', lobbyPlayersH2:'Players',
+    lobbyStart:'🚀 Start Game',
+    lobbyWaitHost:'👥 Waiting for at least 1 more player to join…',
+    lobbyWaitHostReady:'✅ {n} players ready — tap Start when you\'re set!',
+    lobbyWaitGuest:'⏳ Waiting for the host to start the game…',
+    lobbyGuestReady:"You're all set! Sit tight 🍽️",
+    settingsH2:'⚙️ Settings', cardsLbl:'Cards to swipe per player',
+    catsDesel:'Deselect All', catsSel:'Select All',
+    radiusLbl:'Max distance', ratingLbl:'Minimum rating', fastLbl:'⚡ Fast only (≤45 min)',
+    pinTitleSpan:'📌 Pin specific places', pinSubSpan:'always in your game', phPinSearch:'🔍 Search a restaurant name…',
+    tonightH2:"Tonight's restaurants", leaveRoom:'← Leave Room',
+    swipeTitle:'Swipe to vote', swipeSub:'Right = 👍 Wanna order this · Left = 👎 Nope',
+    superHint:'⭐ 1 superlike — guarantees this place reaches the finals',
+    waitDone:"You're done!", waitOthers:'Waiting for the others to finish…',
+    waitProgress:'{done} of {count} players finished', playerDone:'Done!',
+    rankTitle:'🏆 <span style="color:var(--red)">Tiebreaker — Rank them!</span>',
+    rankSub:'Drag or use arrows · #1 = your top pick', rankBtn:'🔒 Lock in my ranking',
+    resultOrderFrom:"You're ordering from", resultOrder:'🛵 Order on Wolt',
+    resultAgain:'🔄 Play Again', resultHome:'← Home',
+    allVotes:'All votes', noConsensus:'No consensus!',
+    noConsensusP:"No restaurant got 70%+ approval. Here's how everyone voted:",
+    playerLeft:'{name} left the game',
+  },
+  he: {
+    sp1:"1 · הגדרה", sp2:"2 · לובי", sp3:"3 · הגלשה", sp4:"4 · תוצאות",
+    heroSub:'תפסיקו להתווכח על איפה לאכול.<br><strong>כולם מגלישים, הקבוצה מחליטה — כמו טינדר למסעדות.</strong>',
+    btnCreate:'<span class="btn-hero-icon">🎮</span> צור משחק מרובה שחקנים',
+    btnJoin:'🔗 הצטרף עם קוד', btnSolo:'🎯 רולטה סולו — רק בשבילי', btnHowto:'❓ איך משחקים?',
+    createH2:'🎮 צור משחק', lblName:'השם שלך', phName:'כינוי שלך',
+    lblLoc:'מיקום', phLoc:'מאתר מיקום…', btnCreateGame:'צור משחק 🚀',
+    btnBack:'חזור →',
+    joinH2:'🔗 הצטרף למשחק', lblJoinName:'מה שמך?', phJoinName:'כינוי שלך',
+    lblCode:'קוד חדר', btnJoinGame:'הצטרף →',
+    lobbyCodeLbl:'קוד חדר', lobbyCodeHint:'שתף את הקוד עם החברים',
+    lobbyShare:'🔗 שתף קישור הזמנה', lobbyPlayersH2:'שחקנים',
+    lobbyStart:'🚀 התחל משחק',
+    lobbyWaitHost:'👥 מחכה לעוד שחקן אחד לפחות…',
+    lobbyWaitHostReady:'✅ {n} שחקנים מוכנים — לחץ התחל!',
+    lobbyWaitGuest:'⏳ מחכה שהמארח יתחיל…',
+    lobbyGuestReady:'הכל מוכן! שב בנחת 🍽️',
+    settingsH2:'⚙️ הגדרות', cardsLbl:'כרטיסים לכל שחקן',
+    catsDesel:'בטל הכל', catsSel:'בחר הכל',
+    radiusLbl:'מרחק מקסימלי', ratingLbl:'דירוג מינימלי', fastLbl:"⚡ מהיר בלבד (עד 45 דק')",
+    pinTitleSpan:'📌 הצמד מקומות', pinSubSpan:'תמיד במשחק', phPinSearch:'🔍 חפש שם מסעדה…',
+    tonightH2:'מסעדות להלילה', leaveRoom:'עזוב חדר →',
+    swipeTitle:'הגלש להצביע', swipeSub:'ימין = 👍 רוצה · שמאל = 👎 לא',
+    superHint:'⭐ סופרלייק אחד — מבטיח הגעה לגמר',
+    waitDone:'סיימת!', waitOthers:'מחכה שהשאר יסיימו…',
+    waitProgress:'{done} מתוך {count} שחקנים סיימו', playerDone:'סיים!',
+    rankTitle:'🏆 <span style="color:var(--red)">תיקו — דרג אותם!</span>',
+    rankSub:'גרור או השתמש בחצים · #1 = הבחירה שלך', rankBtn:'🔒 נעל את הדירוג שלי',
+    resultOrderFrom:'אתם מזמינים מ', resultOrder:'🛵 הזמנה בוולט',
+    resultAgain:'🔄 שחק שוב', resultHome:'בית →',
+    allVotes:'כל ההצבעות', noConsensus:'אין הסכמה!',
+    noConsensusP:'אף מסעדה לא קיבלה 70%+ אישור. כך הצביעו כולם:',
+    playerLeft:'{name} עזב את המשחק',
+  }
+};
+let currentLang = (() => {
+  const saved = localStorage.getItem('fr_lang');
+  if (saved) return saved;
+  // Fast browser-language check (no network) — catches Israeli users with Hebrew browser
+  const navStr = (navigator.languages || [navigator.language || '']).join(',').toLowerCase();
+  if (navStr.includes('he') || navStr.includes('iw')) {
+    localStorage.setItem('fr_lang', 'he');
+    return 'he';
+  }
+  return 'en'; // will be confirmed / overridden by async IP check below
+})();
+
+// Async IP-based detection — first visit only, no saved pref yet
+if (!localStorage.getItem('fr_lang')) {
+  (async () => {
+    try {
+      const r   = await fetch('https://ipapi.co/country_code/', { cache: 'no-store' });
+      const cc  = (await r.text()).trim();
+      const lang = cc === 'IL' ? 'he' : 'en';
+      localStorage.setItem('fr_lang', lang);
+      if (lang !== currentLang) applyLang(lang);
+    } catch {
+      localStorage.setItem('fr_lang', 'en'); // network fail → cache 'en', don't re-check
+    }
+  })();
+}
+
+function t(key) { return (LANGS[currentLang] || LANGS.en)[key] ?? key; }
+
+function applyLang(lang) {
+  currentLang = lang;
+  localStorage.setItem('fr_lang', lang);
+  const L = LANGS[lang] || LANGS.en;
+  document.documentElement.dir  = lang === 'he' ? 'rtl' : 'ltr';
+  document.documentElement.lang = lang;
+  const lb = document.getElementById('langToggle');
+  if (lb) lb.textContent = lang === 'en' ? 'עב' : 'EN';
+  const el  = id  => document.getElementById(id);
+  const set = (id, key, html) => { const e = el(id); if (e && L[key] !== undefined) { if (html) e.innerHTML = L[key]; else e.textContent = L[key]; } };
+  const ph  = (id, key) => { const e = el(id); if (e && L[key] !== undefined) e.placeholder = L[key]; };
+  // Step bar
+  set('sp-1','sp1'); set('sp-2','sp2'); set('sp-3','sp3'); set('sp-4','sp4');
+  // Home
+  set('heroSub','heroSub',true); set('homeHowBtn','btnHowto');
+  set('homeCreateBtn','btnCreate',true); set('homeJoinBtn','btnJoin'); set('homeSoloBtn','btnSolo');
+  // Create
+  set('createPageH2','createH2'); set('createNameLbl','lblName'); ph('hostName','phName');
+  set('createLocLbl','lblLoc'); ph('locationInput','phLoc'); set('createBtn','btnCreateGame');
+  document.querySelectorAll('.btn-back').forEach(b => b.textContent = L.btnBack || b.textContent);
+  // Join
+  set('joinPageH2','joinH2'); set('joinNameLbl','lblJoinName'); ph('joinName','phJoinName');
+  set('joinCodeLbl','lblCode'); set('joinBtn','btnJoinGame');
+  // Lobby
+  set('lobbyCodeLbl','lobbyCodeLbl'); set('lobbyHint','lobbyCodeHint');
+  set('copyLinkBtn','lobbyShare'); set('lobbyPlayersH2','lobbyPlayersH2');
+  set('startGameBtn','lobbyStart'); set('guestWaitCallout','lobbyWaitGuest');
+  set('guestWaitReady','lobbyGuestReady'); set('settingsPanelH2','settingsH2');
+  set('cardsLbl','cardsLbl'); set('radiusLbl','radiusLbl'); set('ratingLbl','ratingLbl');
+  set('fastSpan','fastLbl'); set('pinTitleSpan','pinTitleSpan'); set('pinSubSpan','pinSubSpan');
+  ph('pinSearch','phPinSearch'); set('tonightH2','tonightH2'); set('leaveRoomBtn','leaveRoom');
+  // Swipe
+  set('swipeTitle','swipeTitle'); set('swipeSub','swipeSub'); set('superlikeHint','superHint');
+  // Wait done
+  set('waitDoneText','waitDone'); set('waitOthersText','waitOthers');
+  // Ranking
+  set('rankTitleDiv','rankTitle',true); set('rankSubDiv','rankSub'); set('rankSubmitBtn','rankBtn');
+  // Result
+  set('resultOrderFrom','resultOrderFrom'); set('winnerLink','resultOrder');
+  set('resultAgainBtn','resultAgain'); set('allVotesH2','allVotes');
+  set('noWinnerH2','noConsensus'); set('noWinnerP','noConsensusP');
+  // Catgegories desel/sel button
+  const catBtn = document.getElementById('catToggleAll');
+  if (catBtn) catBtn.textContent = ([...document.querySelectorAll('#lobbyCats .chip')].every(b => activeCats?.has(b.dataset.cat)) ? L.catsDesel : L.catsSel) || catBtn.textContent;
+}
+
+function toggleLang() { applyLang(currentLang === 'en' ? 'he' : 'en'); }
+
 let restaurants = [];   // assigned for this game
 let cardIdx     = 0;    // current card index
 let votes       = {};   // slug → true/false
@@ -2225,8 +2379,8 @@ function updateLobbyPlayers(players) {
     if (btn)  { btn.disabled = !canStart; btn.style.opacity = canStart ? "1" : ".4"; }
     if (hint) {
       hint.textContent = canStart
-        ? `✅ ${players.length} players ready — tap Start when you're set!`
-        : "👥 Waiting for at least 1 more player to join…";
+        ? t('lobbyWaitHostReady').replace('{n}', players.length)
+        : t('lobbyWaitHost');
       hint.className = "wait-callout" + (canStart ? " wait-callout-green" : "");
     }
   }
@@ -2853,6 +3007,9 @@ function showResult(winner, results, mode) {
 function playAgain() {
   socket.emit("restart_game", { code: roomCode });
 }
+
+// Apply language on initial load
+applyLang(currentLang);
 </script>
 
 <footer style="text-align:center;padding:18px 16px 24px;font-size:0.72rem;color:#444;margin-top:auto">
