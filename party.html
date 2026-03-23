@@ -806,8 +806,8 @@
         <div class="demo-card-meta">⭐ 8.4 · 🕐 25 min</div>
       </div>
     </div>
-    <h2>Swipe to vote</h2>
-    <p>
+    <h2 id="ob0h2">Swipe to vote</h2>
+    <p id="ob0p">
       <strong style="color:var(--green)">Swipe RIGHT</strong> if you want to eat there<br>
       <strong style="color:var(--red)">Swipe LEFT</strong> if it's not for you
     </p>
@@ -822,8 +822,8 @@
       <div class="demo-vote-badge hidden-vote">👍</div>
       <div class="demo-vote-badge hidden-vote">👍</div>
     </div>
-    <h2>Everyone votes<br>at the same time</h2>
-    <p>Share a link — friends join on their phone, no app needed. Each person swipes in secret, so no one influences anyone else.</p>
+    <h2 id="ob1h2">Everyone votes<br>at the same time</h2>
+    <p id="ob1p">Share a link — friends join on their phone, no app needed. Each person swipes in secret, so no one influences anyone else.</p>
   </div>
 
   <!-- STEP 3: winner -->
@@ -838,14 +838,14 @@
         <div class="demo-vote-dot"></div>
       </div>
     </div>
-    <h2>The group decides</h2>
-    <p>Most likes wins! If there's a tie, a quick ranking round settles it. No more "I don't know, whatever you want" 😅</p>
+    <h2 id="ob2h2">The group decides</h2>
+    <p id="ob2p">Most likes wins! If there's a tie, a quick ranking round settles it. No more "I don't know, whatever you want" 😅</p>
   </div>
 
   <!-- nav buttons -->
   <div class="ob-btn-wrap">
     <button class="btn btn-primary" id="obNextBtn" onclick="obNext()">Next →</button>
-    <button class="btn btn-secondary" onclick="obFinish()" style="padding:10px;font-size:0.85rem">Skip intro</button>
+    <button id="obSkipBtn" class="btn btn-secondary" onclick="obFinish()" style="padding:10px;font-size:0.85rem">Skip intro</button>
   </div>
 
 </div>
@@ -1442,6 +1442,15 @@ function randomName() {
 const LANGS = {
   en: {
     sp1:"1 · Set Up", sp2:"2 · Lobby", sp3:"3 · Swipe", sp4:"4 · Results",
+    ob0h2:'Swipe to vote',
+    ob0p:'<strong style="color:var(--green)">Swipe RIGHT</strong> if you want to eat there<br><strong style="color:var(--red)">Swipe LEFT</strong> if it\'s not for you',
+    ob1h2:'Everyone votes<br>at the same time',
+    ob1p:'Share a link — friends join on their phone, no app needed. Each person swipes in secret, so no one influences anyone else.',
+    ob2h2:'The group decides',
+    ob2p:'Most likes wins! If there\'s a tie, a quick ranking round settles it. No more "I don\'t know, whatever you want" 😅',
+    obNext:'Next →', obFinal:"Let's eat! 🍽️", obSkip:'Skip intro',
+    tiebreakerTitle:'🔥 <span style="color:var(--red)">Tiebreaker Round!</span>',
+    tiebreakerSub:'All these got 100% — vote again to pick the one',
     heroSub:'Stop arguing about where to eat.<br><strong>Everyone swipes, the group decides — like Tinder for restaurants.</strong>',
     btnCreate:'<span class="btn-hero-icon">🎮</span> Create Multiplayer Game',
     btnJoin:'🔗 Join with a code', btnSolo:'🎯 Solo Roulette — just for me', btnHowto:'❓ How to play?',
@@ -1464,6 +1473,7 @@ const LANGS = {
     tonightH2:"Tonight's restaurants", leaveRoom:'← Leave Room',
     swipeTitle:'Swipe to vote', swipeSub:'Right = 👍 Wanna order this · Left = 👎 Nope',
     superHint:'⭐ 1 superlike — guarantees this place reaches the finals',
+    superUsed:'⭐ Superlike used',
     waitDone:"You're done!", waitOthers:'Waiting for the others to finish…',
     waitProgress:'{done} of {count} players finished', playerDone:'Done!',
     rankTitle:'🏆 <span style="color:var(--red)">Tiebreaker — Rank them!</span>',
@@ -1476,6 +1486,15 @@ const LANGS = {
   },
   he: {
     sp1:"1 · הגדרה", sp2:"2 · לובי", sp3:"3 · הגלשה", sp4:"4 · תוצאות",
+    ob0h2:'הגלש להצביע',
+    ob0p:'<strong style="color:var(--green)">הגלש ימינה</strong> אם תרצה לאכול שם<br><strong style="color:var(--red)">הגלש שמאלה</strong> אם זה לא בשבילך',
+    ob1h2:'כולם מצביעים<br>בו זמנית',
+    ob1p:'שלח קישור — חברים מצטרפים מהטלפון, ללא אפליקציה. כל אחד מגליש בסוד, כך שאיש לא משפיע על האחר.',
+    ob2h2:'הקבוצה מחליטה',
+    ob2p:'הכי הרבה לייקים מנצח! אם יש תיקו, סיבוב דירוג קצר יכריע. לא עוד "לא יודע, מה שבא לך" 😅',
+    obNext:'הבא ←', obFinal:'בואו נאכל! 🍽️', obSkip:'דלג',
+    tiebreakerTitle:'🔥 <span style="color:var(--red)">סיבוב תיקו!</span>',
+    tiebreakerSub:'כולם קיבלו 100% — הצבע שוב לבחור אחד',
     heroSub:'תפסיקו להתווכח על איפה לאכול.<br><strong>כולם מגלישים, הקבוצה מחליטה — כמו טינדר למסעדות.</strong>',
     btnCreate:'<span class="btn-hero-icon">🎮</span> צור משחק מרובה שחקנים',
     btnJoin:'🔗 הצטרף עם קוד', btnSolo:'🎯 רולטה סולו — רק בשבילי', btnHowto:'❓ איך משחקים?',
@@ -1498,6 +1517,7 @@ const LANGS = {
     tonightH2:'מסעדות להלילה', leaveRoom:'עזוב חדר →',
     swipeTitle:'הגלש להצביע', swipeSub:'ימין = 👍 רוצה · שמאל = 👎 לא',
     superHint:'⭐ סופרלייק אחד — מבטיח הגעה לגמר',
+    superUsed:'⭐ סופרלייק נוצל',
     waitDone:'סיימת!', waitOthers:'מחכה שהשאר יסיימו…',
     waitProgress:'{done} מתוך {count} שחקנים סיימו', playerDone:'סיים!',
     rankTitle:'🏆 <span style="color:var(--red)">תיקו — דרג אותם!</span>',
@@ -1551,6 +1571,13 @@ function applyLang(lang) {
   const ph  = (id, key) => { const e = el(id); if (e && L[key] !== undefined) e.placeholder = L[key]; };
   // Step bar
   set('sp-1','sp1'); set('sp-2','sp2'); set('sp-3','sp3'); set('sp-4','sp4');
+  // Onboarding
+  set('ob0h2','ob0h2'); set('ob0p','ob0p',true);
+  set('ob1h2','ob1h2',true); set('ob1p','ob1p');
+  set('ob2h2','ob2h2'); set('ob2p','ob2p');
+  set('obSkipBtn','obSkip');
+  const obBtn = el('obNextBtn');
+  if (obBtn) obBtn.textContent = (typeof obStep !== 'undefined' && obStep === 2) ? L.obFinal : L.obNext;
   // Home
   set('heroSub','heroSub',true); set('homeHowBtn','btnHowto');
   set('homeCreateBtn','btnCreate',true); set('homeJoinBtn','btnJoin'); set('homeSoloBtn','btnSolo');
@@ -2156,7 +2183,7 @@ function obGo(step) {
   });
   obStep = step;
   const btn = document.getElementById('obNextBtn');
-  if (btn) btn.textContent = step === 2 ? "Let's eat! 🍽️" : 'Next →';
+  if (btn) btn.textContent = step === 2 ? t('obFinal') : t('obNext');
 }
 
 function obNext() {
@@ -2579,12 +2606,11 @@ function updateSuperlikeBtn() {
     btn.classList.add("used");
     btn.disabled = true;
     btn.title = "Superlike already used";
-    if (hint) hint.textContent = "⭐ Superlike used";
+    if (hint) hint.textContent = t('superUsed');
   } else {
     btn.classList.remove("used");
     btn.disabled = false;
-    btn.title = "Superlike — promotes to finals!";
-    if (hint) hint.textContent = "⭐ 1 superlike — guarantees this place reaches the finals";
+    if (hint) hint.textContent = t('superHint');
   }
 }
 
@@ -2605,14 +2631,11 @@ function startSwipe() {
   document.querySelectorAll(".action-btn").forEach(b => b.style.display = "flex");
 
   if (isTiebreaker) {
-    document.getElementById("swipeTitle").innerHTML =
-      '🔥 <span style="color:var(--red)">Tiebreaker Round!</span>';
-    document.getElementById("swipeSub").textContent =
-      "All these got 100% — vote again to pick the one";
+    document.getElementById("swipeTitle").innerHTML = t('tiebreakerTitle');
+    document.getElementById("swipeSub").textContent = t('tiebreakerSub');
   } else {
-    document.getElementById("swipeTitle").textContent = "Swipe to vote";
-    document.getElementById("swipeSub").textContent =
-      "Right = 👍 Wanna order this · Left = 👎 Nope";
+    document.getElementById("swipeTitle").textContent = t('swipeTitle');
+    document.getElementById("swipeSub").textContent   = t('swipeSub');
   }
 
   buildProgressDots();
