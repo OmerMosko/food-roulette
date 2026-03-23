@@ -19,10 +19,24 @@ LAT = 32.0761450
 LON = 34.7809560
 
 TARGET_TAGS = {
-    "burgers":       ["burger","burgers","hamburger"],
+    "burgers":       ["burger", "burgers", "hamburger"],
     "pizza":         ["pizza"],
-    "mexican":       ["mexican","tex-mex","tacos","burrito"],
-    "fried chicken": ["chicken","fried chicken","wings"],
+    "sushi":         ["sushi", "japanese"],
+    "mexican":       ["mexican", "tex-mex", "tacos", "burrito", "tortilla"],
+    "shawarma":      ["shawarma"],
+    "falafel":       ["falafel", "pita"],
+    "kebab":         ["kebab"],
+    "chicken":       ["fried chicken", "schnitzel", "wings", "chicken"],
+    "pasta":         ["pasta", "italian"],
+    "grill":         ["grill", "bbq", "barbecue"],
+    "sandwiches":    ["sandwich", "sandwiches"],
+    "asian":         ["asian", "noodles", "thai", "chinese", "wok", "ramen", "poke"],
+    "mediterranean": ["mediterranean", "middle eastern", "israeli"],
+    "salads":        ["salad"],
+    "vegetarian":    ["vegetarian", "vegan", "healthy"],
+    "breakfast":     ["breakfast", "bakery", "café", "cafe", "bagel", "crepes"],
+    "desserts":      ["dessert", "ice cream", "cake", "pastry", "sweets"],
+    "street food":   ["street food", "american", "hotdog"],
 }
 
 HEADERS = {

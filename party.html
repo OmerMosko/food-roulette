@@ -919,12 +919,26 @@
       </div>
     </div>
 
-    <label>Categories</label>
+    <label>Categories <button id="catToggleAll" onclick="toggleAllCats()" style="margin-left:8px;font-size:0.7rem;padding:2px 8px;border-radius:20px;border:1px solid var(--muted);background:transparent;color:var(--muted);cursor:pointer">Deselect All</button></label>
     <div class="chip-row" id="lobbyCats">
       <button class="chip on" data-cat="burgers">🍔 Burgers</button>
       <button class="chip on" data-cat="pizza">🍕 Pizza</button>
+      <button class="chip on" data-cat="sushi">🍱 Sushi</button>
       <button class="chip on" data-cat="mexican">🌮 Mexican</button>
-      <button class="chip on" data-cat="fried chicken">🍗 Fried Chicken</button>
+      <button class="chip on" data-cat="shawarma">🌯 Shawarma</button>
+      <button class="chip on" data-cat="falafel">🧆 Falafel</button>
+      <button class="chip on" data-cat="kebab">🔥 Kebab</button>
+      <button class="chip on" data-cat="chicken">🍗 Chicken</button>
+      <button class="chip on" data-cat="pasta">🍝 Pasta</button>
+      <button class="chip on" data-cat="grill">🥩 Grill</button>
+      <button class="chip on" data-cat="sandwiches">🥪 Sandwiches</button>
+      <button class="chip on" data-cat="asian">🍜 Asian</button>
+      <button class="chip on" data-cat="mediterranean">🫙 Mediterranean</button>
+      <button class="chip on" data-cat="salads">🥗 Salads</button>
+      <button class="chip on" data-cat="vegetarian">🌱 Vegan</button>
+      <button class="chip on" data-cat="breakfast">🥞 Breakfast</button>
+      <button class="chip on" data-cat="desserts">🍰 Desserts</button>
+      <button class="chip on" data-cat="street food">🍟 Street Food</button>
     </div>
 
     <label>Max distance</label>
@@ -1294,7 +1308,11 @@ document.addEventListener("pointerdown", () => sounds.tick && sounds, { once: tr
 // State
 // ═══════════════════════════════════════
 const CAT_EMOJIS = {
-  burgers:"🍔", pizza:"🍕", mexican:"🌮", "fried chicken":"🍗"
+  burgers:"🍔", pizza:"🍕", sushi:"🍱", mexican:"🌮",
+  shawarma:"🌯", falafel:"🧆", kebab:"🔥", chicken:"🍗",
+  pasta:"🍝", grill:"🥩", sandwiches:"🥪", asian:"🍜",
+  mediterranean:"🫙", salads:"🥗", vegetarian:"🌱",
+  breakfast:"🥞", desserts:"🍰", "street food":"🍟",
 };
 
 let socket      = null;
@@ -1332,7 +1350,11 @@ let votes       = {};   // slug → true/false
 
 let optionCount  = 10;
 let maxOptions   = 40;
-let activeCats   = new Set(["burgers","pizza","mexican","fried chicken"]);
+let activeCats   = new Set([
+  "burgers","pizza","sushi","mexican","shawarma","falafel","kebab",
+  "chicken","pasta","grill","sandwiches","asian","mediterranean",
+  "salads","vegetarian","breakfast","desserts","street food",
+]);
 let maxRadius    = 0;
 let minScore     = 8.0;
 
@@ -1664,6 +1686,30 @@ function fetchPoolCount() {
   }, 400);
 }
 
+function toggleAllCats() {
+  const allCats = [...document.querySelectorAll("#lobbyCats .chip")].map(b => b.dataset.cat);
+  const btn = document.getElementById("catToggleAll");
+  const allOn = allCats.every(c => activeCats.has(c));
+  if (allOn) {
+    // deselect all except one (keep at least 1)
+    const first = allCats[0];
+    allCats.forEach(c => {
+      activeCats.delete(c);
+      document.querySelector(`#lobbyCats .chip[data-cat="${c}"]`)?.classList.remove("on");
+    });
+    activeCats.add(first);
+    document.querySelector(`#lobbyCats .chip[data-cat="${first}"]`)?.classList.add("on");
+    if (btn) btn.textContent = "Select All";
+  } else {
+    allCats.forEach(c => {
+      activeCats.add(c);
+      document.querySelector(`#lobbyCats .chip[data-cat="${c}"]`)?.classList.add("on");
+    });
+    if (btn) btn.textContent = "Deselect All";
+  }
+  scheduleRepull();
+}
+
 // Cat chips
 document.querySelectorAll("#lobbyCats .chip").forEach(btn => {
   btn.addEventListener("click", () => {
@@ -1676,6 +1722,10 @@ document.querySelectorAll("#lobbyCats .chip").forEach(btn => {
       activeCats.add(cat);
       btn.classList.add("on");
     }
+    // sync toggle-all label
+    const allCats = [...document.querySelectorAll("#lobbyCats .chip")].map(b => b.dataset.cat);
+    const toggleBtn = document.getElementById("catToggleAll");
+    if (toggleBtn) toggleBtn.textContent = allCats.every(c => activeCats.has(c)) ? "Deselect All" : "Select All";
     scheduleRepull();
   });
 });
