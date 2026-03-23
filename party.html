@@ -225,6 +225,14 @@
       font-size:1.05rem;padding:0 2px;line-height:1;transition:color .15s;
     }
     .pin-remove:hover{color:var(--red)}
+    .pin-status{
+      padding:12px 16px;font-size:0.84rem;text-align:center;color:var(--muted);
+    }
+    .pin-status.success{color:var(--green);font-weight:600}
+    @keyframes pin-dots{0%,80%,100%{opacity:0}40%{opacity:1}}
+    .pin-dot{display:inline-block;animation:pin-dots 1.2s ease-in-out infinite}
+    .pin-dot:nth-child(2){animation-delay:.2s}
+    .pin-dot:nth-child(3){animation-delay:.4s}
 
     /* ── Player list ── */
     .player-list{display:flex;flex-direction:column;gap:8px;width:100%}
@@ -1810,11 +1818,19 @@ function onPinSearch() {
   const q = (document.getElementById("pinSearch")?.value || "").trim();
   clearTimeout(_pinTimer);
   if (q.length < 2) { hidePinDrop(); return; }
+  // Show loading state immediately
+  const drop = document.getElementById("pinDropdown");
+  if (drop) {
+    drop.innerHTML = `<div class="pin-status">Searching<span class="pin-dot">·</span><span class="pin-dot">·</span><span class="pin-dot">·</span></div>`;
+    drop.style.display = "block";
+  }
   _pinTimer = setTimeout(() => {
     fetch(`/api/search?q=${encodeURIComponent(q)}&lat=${userLat}&lon=${userLon}`)
       .then(r => r.json())
       .then(d => renderPinDrop(d.results || []))
-      .catch(() => hidePinDrop());
+      .catch(() => {
+        if (drop) { drop.innerHTML = `<div class="pin-status">Search failed — try again</div>`; }
+      });
   }, 280);
 }
 
@@ -1822,7 +1838,11 @@ function renderPinDrop(results) {
   const drop = document.getElementById("pinDropdown");
   if (!drop) return;
   const filtered = results.filter(r => !pinnedItems.find(p => p.slug === r.slug));
-  if (!filtered.length) { drop.style.display = "none"; return; }
+  if (!filtered.length) {
+    drop.innerHTML = `<div class="pin-status">No results found</div>`;
+    drop.style.display = "block";
+    return;
+  }
   drop.innerHTML = filtered.map(r => {
     const emoji = CAT_EMOJIS[r.category] || "🍽️";
     const name  = r.name.replace(/'/g, "\\'");
@@ -1840,9 +1860,15 @@ function pinPlace(slug, name, emoji, score) {
   if (pinnedItems.find(p => p.slug === slug)) return;
   pinnedItems.push({ slug, name, emoji, score });
   renderPinnedChips();
-  hidePinDrop();
   const inp = document.getElementById("pinSearch");
   if (inp) inp.value = "";
+  // Show confirmation flash, then hide dropdown
+  const drop = document.getElementById("pinDropdown");
+  if (drop) {
+    drop.innerHTML = `<div class="pin-status success">✅ ${emoji} ${name} pinned!</div>`;
+    drop.style.display = "block";
+    setTimeout(() => { drop.style.display = "none"; }, 1400);
+  }
   scheduleRepull();
 }
 
