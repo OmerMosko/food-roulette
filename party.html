@@ -922,11 +922,11 @@
 
 <!-- ═══ PAGE: LOBBY ═══ -->
 <div class="page" id="pg-lobby">
-  <div class="panel" style="text-align:center">
+  <div class="panel" style="display:flex;flex-direction:column;align-items:center;text-align:center">
     <div class="winner-label">Room Code</div>
-    <div class="code-badge" id="lobbyCode">----</div>
-    <div class="code-hint" id="lobbyHint">Share this code with your friends</div>
-    <div style="margin-top:10px">
+    <div class="code-badge" id="lobbyCode" style="padding-left:8px">----</div>
+    <div class="code-hint" id="lobbyHint" style="margin-top:4px">Share this code with your friends</div>
+    <div style="margin-top:12px">
       <button class="btn btn-secondary" id="copyLinkBtn" onclick="copyInviteLink()"
         style="padding:10px 20px;font-size:0.85rem;width:auto;display:inline-flex;align-items:center;gap:6px">
         🔗 Share invite link
@@ -1102,7 +1102,7 @@
   </div>
 
   <!-- waiting state (shown after all swiped) -->
-  <div id="waitingOthers" style="display:none;width:100%;text-align:center;padding:32px 16px 0;flex-direction:column;align-items:center;gap:16px">
+  <div id="waitingOthers" style="display:none;position:absolute;inset:0;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;text-align:center;background:var(--bg);z-index:10">
     <div style="font-size:5rem;animation:bounce-wait 1.4s ease-in-out infinite">☕</div>
     <div style="font-size:1.4rem;font-weight:800;color:var(--text)">You're done!</div>
     <div style="font-size:0.9rem;color:var(--muted)">Waiting for the others to finish…</div>
