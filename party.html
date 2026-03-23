@@ -201,6 +201,26 @@
       background:rgba(6,214,160,.07);border-color:rgba(6,214,160,.3);color:var(--green);
     }
 
+    /* ── Share button pulse when waiting for players ── */
+    @keyframes btn-wiggle{
+      0%,85%,100%{transform:translateX(0) scale(1)}
+      87%{transform:translateX(-4px) scale(1.02)}
+      89%{transform:translateX(4px) scale(1.02)}
+      91%{transform:translateX(-3px)}
+      93%{transform:translateX(3px)}
+      95%{transform:translateX(0) scale(1)}
+    }
+    .btn-invite-pulse{
+      border-color:var(--accent) !important;
+      color:var(--accent) !important;
+      animation:btn-wiggle 2.8s ease-in-out infinite;
+    }
+    .hint-invite-link{
+      color:var(--accent);font-weight:700;cursor:pointer;
+      text-decoration:underline;background:none;border:none;
+      font-size:inherit;padding:0;
+    }
+
     /* ── Pin-specific-place search ── */
     #pinDropdown{
       position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:200;
@@ -1462,7 +1482,8 @@ const LANGS = {
     lobbyCodeLbl:'Room Code', lobbyCodeHint:'Share this code with your friends',
     lobbyShare:'🔗 Share invite link', lobbyPlayersH2:'Players',
     lobbyStart:'🚀 Start Game',
-    lobbyWaitHost:'👥 Waiting for at least 1 more player to join…',
+    lobbyWaitHost:'👥 {invite} at least 1 more player',
+    inviteWord:'Invite',
     lobbyWaitHostReady:'✅ {n} players ready — tap Start when you\'re set!',
     lobbyWaitGuest:'⏳ Waiting for the host to start the game…',
     lobbyGuestReady:"You're all set! Sit tight 🍽️",
@@ -1506,7 +1527,8 @@ const LANGS = {
     lobbyCodeLbl:'קוד חדר', lobbyCodeHint:'שתף את הקוד עם החברים',
     lobbyShare:'🔗 שתף קישור הזמנה', lobbyPlayersH2:'שחקנים',
     lobbyStart:'🚀 התחל משחק',
-    lobbyWaitHost:'👥 מחכה לעוד שחקן אחד לפחות…',
+    lobbyWaitHost:'👥 {invite} לפחות עוד שחקן אחד',
+    inviteWord:'הזמן',
     lobbyWaitHostReady:'✅ {n} שחקנים מוכנים — לחץ התחל!',
     lobbyWaitGuest:'⏳ מחכה שהמארח יתחיל…',
     lobbyGuestReady:'הכל מוכן! שב בנחת 🍽️',
@@ -2412,11 +2434,21 @@ function updateLobbyPlayers(players) {
     const btn  = document.getElementById("startGameBtn");
     const hint = document.getElementById("startHint");
     if (btn)  { btn.disabled = !canStart; btn.style.opacity = canStart ? "1" : ".4"; }
+    // Share button: pulse + accent when still waiting, normal when ready
+    const shareBtn = document.getElementById("copyLinkBtn");
+    if (shareBtn) shareBtn.classList.toggle("btn-invite-pulse", !canStart);
     if (hint) {
-      hint.textContent = canStart
-        ? t('lobbyWaitHostReady').replace('{n}', players.length)
-        : t('lobbyWaitHost');
-      hint.className = "wait-callout" + (canStart ? " wait-callout-green" : "");
+      if (canStart) {
+        hint.textContent  = t('lobbyWaitHostReady').replace('{n}', players.length);
+        hint.className    = "wait-callout wait-callout-green";
+      } else {
+        const inviteWord  = t('inviteWord');
+        hint.innerHTML    = t('lobbyWaitHost').replace(
+          '{invite}',
+          `<button class="hint-invite-link" onclick="copyInviteLink()">${inviteWord}</button>`
+        );
+        hint.className    = "wait-callout";
+      }
     }
   }
 }
