@@ -175,6 +175,32 @@
     }
     .code-hint{font-size:0.8rem;color:var(--muted);margin-top:4px}
 
+    /* ── Step progress bar ── */
+    #stepBar{display:none;justify-content:center;align-items:center;gap:4px;padding:8px 16px 2px;flex-wrap:nowrap}
+    .step-pill{
+      font-size:0.68rem;font-weight:700;padding:3px 10px;border-radius:20px;
+      color:var(--muted);background:transparent;border:1px solid transparent;
+      transition:all .25s;white-space:nowrap;
+    }
+    .step-pill.active{color:var(--accent);border-color:var(--accent);background:rgba(255,111,97,.1)}
+    .step-pill.done{color:var(--green);opacity:0.5}
+    .step-sep{color:var(--border);font-size:0.75rem;flex-shrink:0}
+
+    /* ── Lobby waiting callouts ── */
+    @keyframes pulse-fade{0%,100%{opacity:.65}50%{opacity:1}}
+    .wait-callout{
+      margin-top:12px;padding:11px 16px;border-radius:12px;font-size:0.82rem;
+      font-weight:600;text-align:center;
+      background:rgba(255,193,7,.07);border:1px solid rgba(255,193,7,.25);
+      color:#ffc107;animation:pulse-fade 2.2s ease-in-out infinite;
+    }
+    .wait-callout-blue{
+      background:rgba(76,201,240,.07);border-color:rgba(76,201,240,.25);color:var(--blue);
+    }
+    .wait-callout-green{
+      background:rgba(6,214,160,.07);border-color:rgba(6,214,160,.3);color:var(--green);
+    }
+
     /* ── Player list ── */
     .player-list{display:flex;flex-direction:column;gap:8px;width:100%}
     .player-item{
@@ -712,6 +738,15 @@
 <nav>
   <h1 onclick="showPage('pg-home')" style="cursor:pointer" title="Home">🎉 Food Roulette</h1>
 </nav>
+<div id="stepBar">
+  <span class="step-pill" id="sp-1">1 · Set Up</span>
+  <span class="step-sep">›</span>
+  <span class="step-pill" id="sp-2">2 · Lobby</span>
+  <span class="step-sep">›</span>
+  <span class="step-pill" id="sp-3">3 · Swipe</span>
+  <span class="step-sep">›</span>
+  <span class="step-pill" id="sp-4">4 · Results</span>
+</div>
 
 <!-- ═══ PAGE: ONBOARDING ═══ -->
 <div class="page" id="pg-onboard">
@@ -848,10 +883,12 @@
 <div class="page" id="pg-join">
   <div class="panel">
     <h2>🔗 Join a Game</h2>
-    <label>Room code (4 letters)</label>
-    <input type="text" id="joinCode" class="input-code" placeholder="ABCD" maxlength="4"/>
-    <label>Your name</label>
-    <input type="text" id="joinName" placeholder="Your nickname" maxlength="20"/>
+    <label style="font-size:0.7rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">What's your name?</label>
+    <input type="text" id="joinName" placeholder="Your nickname" maxlength="20"
+      style="font-size:1.35rem;padding:14px 16px;font-weight:700"/>
+    <label style="font-size:0.7rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-top:14px">Room code</label>
+    <input type="text" id="joinCode" class="input-code" placeholder="ABCD" maxlength="4"
+      style="font-size:1.1rem;letter-spacing:6px;padding:10px 16px;max-width:160px;align-self:flex-start"/>
     <div class="error-box" id="joinError"></div>
     <button class="btn btn-primary" id="joinBtn" onclick="joinGame()">Join Game →</button>
   </div>
@@ -883,14 +920,19 @@
         style="opacity:.4">
         🚀 Start Game
       </button>
-      <div style="margin-top:8px;font-size:0.75rem;color:var(--muted);text-align:center" id="startHint">
-        Waiting for at least 1 more player…
+      <div class="wait-callout" id="startHint">
+        👥 Waiting for at least 1 more player to join…
       </div>
     </div>
 
     <!-- Guest: waiting message -->
-    <div id="guestWaitWrap" style="display:none;margin-top:14px;font-size:0.85rem;color:var(--muted);text-align:center">
-      ⏳ Waiting for the host to start…
+    <div id="guestWaitWrap" style="display:none;margin-top:14px">
+      <div class="wait-callout wait-callout-blue">
+        ⏳ Waiting for the host to start the game…
+      </div>
+      <div style="margin-top:8px;font-size:0.75rem;color:var(--muted);text-align:center">
+        You're all set! Sit tight 🍽️
+      </div>
     </div>
   </div>
 
@@ -1493,11 +1535,24 @@ let superlikedSlugs = new Set(); // slugs that have been superlikes by anyone
 // ═══════════════════════════════════════
 // Page nav
 // ═══════════════════════════════════════
+const _stepMap = {'pg-create':1,'pg-join':1,'pg-lobby':2,'pg-swipe':3,'pg-result':4};
 function showPage(id) {
   document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
   document.getElementById(id).classList.add("active");
   // Lock body scroll on swipe page so everything fits in viewport
   document.body.classList.toggle("swipe-mode", id === "pg-swipe");
+  // Step bar
+  const stepBar = document.getElementById("stepBar");
+  const step = _stepMap[id];
+  if (step && stepBar) {
+    stepBar.style.display = "flex";
+    for (let i = 1; i <= 4; i++) {
+      const sp = document.getElementById(`sp-${i}`);
+      if (sp) sp.className = "step-pill" + (i === step ? " active" : i < step ? " done" : "");
+    }
+  } else if (stepBar) {
+    stepBar.style.display = "none";
+  }
 }
 
 // ═══════════════════════════════════════
@@ -1842,6 +1897,17 @@ function renderLobby(players, total, rests, poolCount) {
   const link = `${location.origin}/?join=${roomCode}`;
   document.getElementById("lobbyLink").textContent = link;
 
+  // Guests see a smaller code badge (it's for reference, not sharing)
+  const codeBadge = document.getElementById("lobbyCode");
+  if (codeBadge) {
+    codeBadge.style.fontSize    = isHost ? "2.5rem" : "1.4rem";
+    codeBadge.style.letterSpacing = isHost ? "8px" : "4px";
+  }
+  const codeHint = document.getElementById("lobbyHint");
+  if (codeHint) codeHint.style.display = isHost ? "" : "none";
+  const copyBtn = document.getElementById("copyLinkBtn");
+  if (copyBtn) copyBtn.style.display = isHost ? "" : "none";
+
   updateLobbyPlayers(players, total);
 
   // Show settings panel + start controls for host only
@@ -1998,9 +2064,12 @@ function updateLobbyPlayers(players) {
     const btn  = document.getElementById("startGameBtn");
     const hint = document.getElementById("startHint");
     if (btn)  { btn.disabled = !canStart; btn.style.opacity = canStart ? "1" : ".4"; }
-    if (hint) hint.textContent = canStart
-      ? `${players.length} players ready — start when you're ready!`
-      : "Waiting for at least 1 more player…";
+    if (hint) {
+      hint.textContent = canStart
+        ? `✅ ${players.length} players ready — tap Start when you're set!`
+        : "👥 Waiting for at least 1 more player to join…";
+      hint.className = "wait-callout" + (canStart ? " wait-callout-green" : "");
+    }
   }
 }
 
