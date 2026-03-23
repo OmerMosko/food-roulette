@@ -517,10 +517,23 @@ def on_disconnect():
             if not room["players"]:
                 del rooms[code]
             else:
-                socketio.emit("player_left", {
+                status = room.get("status", "waiting")
+                evt = {
                     "name":    player_name,
                     "players": [p["name"] for p in room["players"].values()],
-                }, room=code)
+                    "status":  status,
+                }
+                if status == "voting":
+                    # Re-evaluate remaining players — don't wait for the one who left
+                    total_rests  = len(room["restaurants"])
+                    voted_counts = {p["name"]: len(p["votes"]) for p in room["players"].values()}
+                    evt["progress"] = voted_counts
+                    evt["total"]    = total_rests
+                    socketio.emit("player_left", evt, room=code)
+                    if all(p["done"] for p in room["players"].values()):
+                        _finish_game(code)
+                else:
+                    socketio.emit("player_left", evt, room=code)
             break
 
 

@@ -1660,6 +1660,12 @@ function initSocket() {
   });
 
   socket.on("player_left", d => {
+    showLeaveToast(d.name);
+    // During voting: update the wait-progress screen (removes them from the count)
+    if (d.status === "voting" && d.progress !== undefined) {
+      updateWaitProgress(d.progress, d.total);
+    }
+    // Always sync lobby player list (harmless if lobby isn't visible)
     updateLobbyPlayers(d.players);
   });
 
@@ -2095,6 +2101,27 @@ function showSuperlikeToast() {
   toast.textContent = "⭐ Someone used their Superlike!";
   document.body.appendChild(toast);
   setTimeout(() => toast.remove(), 2500);
+}
+
+function showLeaveToast(name) {
+  const existing = document.getElementById("leaveToast");
+  if (existing) existing.remove();
+  const toast = document.createElement("div");
+  toast.id = "leaveToast";
+  toast.style.cssText = `
+    position:fixed;top:72px;left:50%;transform:translateX(-50%);
+    background:#1a1a24;border:1px solid rgba(255,80,80,.35);
+    color:#ff6b6b;font-weight:600;font-size:0.85rem;padding:10px 20px;
+    border-radius:50px;z-index:9999;animation:pop 0.3s ease;
+    box-shadow:0 4px 20px rgba(0,0,0,.4);white-space:nowrap;
+  `;
+  toast.textContent = `⚡ ${name} left the game`;
+  document.body.appendChild(toast);
+  setTimeout(() => {
+    toast.style.transition = "opacity 0.4s";
+    toast.style.opacity = "0";
+    setTimeout(() => toast.remove(), 400);
+  }, 2500);
 }
 
 function startGame() {
